@@ -426,6 +426,124 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1299242294
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1299242299}
+  - component: {fileID: 1299242298}
+  - component: {fileID: 1299242297}
+  - component: {fileID: 1299242296}
+  - component: {fileID: 1299242295}
+  m_Layer: 0
+  m_Name: Root
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1299242295
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1299242294}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8fbf608584fdc1b49aafb9c9caf4d9d7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _root: {fileID: 0}
+  _title: {fileID: 0}
+  _currentVersion: {fileID: 0}
+  _NewVersion: {fileID: 0}
+  _Description: {fileID: 0}
+  _update: {fileID: 0}
+  _skip: {fileID: 0}
+--- !u!114 &1299242296
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1299242294}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9b9cf74488a1f846b74f73e7be53036, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _root: {fileID: 0}
+  _name: {fileID: 0}
+  _email: {fileID: 0}
+  _password1: {fileID: 0}
+  _password2: {fileID: 0}
+--- !u!114 &1299242297
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1299242294}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fe9360973ff3fd4cb993f6360d6a526, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _root: {fileID: 0}
+  _loginusername: {fileID: 0}
+  _loginpassword: {fileID: 0}
+--- !u!114 &1299242298
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1299242294}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d0c5c89a3d94484d89ad76006050841, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _loginpage: {fileID: 1299242297}
+  _registerpage: {fileID: 1299242296}
+  _updatepage: {fileID: 1299242295}
+  _noInternetpage: {fileID: 0}
+  _LoginButton: {fileID: 0}
+  _RegisterButton: {fileID: 0}
+  _buttonRoot: {fileID: 0}
+  AutoLogin: 0
+  ForceUpdateData:
+    _serverCurrentVersionData:
+      Version: 
+    _serverForceUpdateVersionData:
+      Version: 
+    _clientVersionData:
+      Version: 
+    UpdateUrl: 
+    CanUpdate: 0
+    ForceUpdate: 0
+    NoUpdate: 0
+    description: 
+--- !u!4 &1299242299
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1299242294}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -433,3 +551,4 @@ SceneRoots:
   - {fileID: 330585546}
   - {fileID: 410087041}
   - {fileID: 832575519}
+  - {fileID: 1299242299}
