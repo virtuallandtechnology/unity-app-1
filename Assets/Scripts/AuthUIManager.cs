@@ -82,7 +82,6 @@ namespace VirtualLand.NewSystem.UI
             AnimatePanelEntry(loginPanel);
         }
 
-        // نمایش ارور ۳ ثانیه‌ای با انیمیشن
         public void ShowErrorNotification(string message)
         {
             errorPopupText.text = message;
@@ -91,12 +90,11 @@ namespace VirtualLand.NewSystem.UI
 
             Sequence seq = DOTween.Sequence();
             seq.Append(errorPopup.transform.DOScale(1f, 0.3f).SetEase(Ease.OutBack)); // باز شدن
-            seq.AppendInterval(3f); // صبر ۳ ثانیه
+            seq.AppendInterval(3f); 
             seq.Append(errorPopup.transform.DOScale(0f, 0.3f).SetEase(Ease.InBack)); // بسته شدن
             seq.OnComplete(() => errorPopup.SetActive(false));
         }
 
-        // انیمیشن عمومی باز شدن پنل‌ها
         private void AnimatePanelEntry(GameObject panel)
         {
             panel.transform.localScale = Vector3.one * 0.8f;

@@ -167,7 +167,7 @@ namespace VirtualLand.NewSystem.Managers
         {
             AuthUIManager.Instance.CloseAllPanels();
             MainMnue.SetActive(true);
-            // یا SceneManager.LoadScene("MainMenu");
+            //  SceneManager.LoadScene("MainMenu");
             Debug.Log("User Entered Main Menu");
         }
 
