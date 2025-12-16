@@ -1,8 +1,10 @@
 ﻿using System;
+using TMPro;
 using Unity.VisualScripting.Antlr3.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using static ApiClient;
 
 public class BootStrapController : MonoBehaviour
 {
@@ -15,16 +17,33 @@ public class BootStrapController : MonoBehaviour
     [SerializeField] private Button _LoginButton;
     [SerializeField] private Button _RegisterButton;
     [SerializeField] private GameObject _buttonRoot;
+    [SerializeField] private TextMeshProUGUI _userNameHome;
+    [SerializeField] private Image _avatarHome;
+
     public bool AutoLogin = false;
     public ForceUpdateData ForceUpdateData;
+    public UserData _user;
+
     private void Start()
     {
+        _registerpage.RegisterAction += Register;
+        _loginpage.LoginAction += Login;
         _LoginButton.onClick.RemoveAllListeners();
         _LoginButton.onClick.AddListener(_loginpage.Login);
         _RegisterButton.onClick.RemoveAllListeners();
         _RegisterButton.onClick.AddListener(_registerpage.Register);
         LoadingHandler.Get().SetVisible(true);
         Getverion();
+    }
+
+    private void Login()
+    {
+        _userNameHome.text = PlayerPrefs.GetString("username");
+    }
+
+    private void Register(string obj)
+    {
+        _userNameHome .text = PlayerPrefs.GetString("username");
     }
 
     public void Getverion()
@@ -102,6 +121,24 @@ public class BootStrapController : MonoBehaviour
         if (AutoLogin && (PlayerPrefs.HasKey("token")))
         {
             Home.gameObject.SetActive(true);
+            _userNameHome.text = PlayerPrefs.GetString("username");
+
+            ApiClient.Get().GetProfileInfo((response) =>
+            {
+                if (response.result != null)
+                {
+                    if (response.result.profile != null)
+                    {
+                        int id = response.result.profile.avatar_id;
+                        if (AvatarsConfig.Instance != null && id >= 0 && id < AvatarsConfig.Instance.Avatars.Count)
+                        {
+                            _avatarHome.sprite = AvatarsConfig.Instance.Avatars[id].sprite;
+                        }
+                    }
+                    _userNameHome.text = response.result.GetUsername();
+                }
+            }, (fail) => { });
+
         }
         else
         {

@@ -219,6 +219,36 @@ public partial class ApiClient
 
         request.Send();
     }
+    public void GetProfileInfo(Action<ApiResponse<User>> onSuccess, Action<string> onFail)
+    {
+        string token = PlayerPrefs.GetString("token");
+        if (string.IsNullOrEmpty(token))
+        {
+            onFail?.Invoke("Token not found. Please login.");
+            return;
+        }
+
+        string url = GameConfig.Instance.BaseURL + "/user/profile/info";
+        Debug.Log("[API] GetProfileInfo URL: " + url);
+
+        // 2. ساخت درخواست GET
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
+            (req, resp) => HandleResponse<User>(req, resp, (ApiResponse<User> response) =>
+            {
+                if (response.result != null)
+                {
+                    Setplayer(response.result);
+                }
+
+                onSuccess?.Invoke(response);
+            }, onFail));
+
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.AddHeader("Accept", "application/json");
+
+      
+        request.Send();
+    }
 
 
 }
@@ -289,7 +319,7 @@ public partial class ApiClient
     {
         public int id { get; set; }
         public int role_id { get; set; }
-        public object username { get; set; }
+        public string username { get; set; }
         public string name { get; set; }
         public string email { get; set; }
 

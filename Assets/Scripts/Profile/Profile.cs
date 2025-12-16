@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -8,77 +8,101 @@ using static ApiClient;
 
 public class Profile : MonoBehaviour
 {
+    [Header("UI References")]
     public TMP_InputField _username;
     public TMP_Text _email;
-    //public string token;
-    public Image Avatar;
+
+    [Header("Avatar Images")]
+    public Image Avatar; 
     public Image AvatarinSelectAvatar;
+    public Image avatarImageProfile; 
+    public Image avatarImageHome; 
+
     private int _currentProfileID;
 
     private void OnEnable()
     {
+        if (LoadingHandler.Get() != null) LoadingHandler.Get().SetVisible(true);
 
-        _email.text = ApiClient.GetPlayer().email;
-        if ((ApiClient.GetPlayer().profile != null))
+        ApiClient.Get().GetProfileInfo(OnGetInfoSuccess, OnFail);
+    }
+
+    private void OnGetInfoSuccess(ApiResponse<User> response)
+    {
+        if (LoadingHandler.Get() != null) LoadingHandler.Get().SetVisible(false);
+
+        if (response.result != null)
         {
-            Avatar.sprite = AvatarsConfig.Instance.Avatars[ApiClient.GetPlayer().profile.avatar_id].sprite;
-            AvatarinSelectAvatar.sprite = AvatarsConfig.Instance.Avatars[ApiClient.GetPlayer().profile.avatar_id].sprite;
+            var user = response.result;
+
+            if (_email != null) _email.text = user.email;
+
+            if (_username != null) _username.text = user.GetUsername();
+
+            if (user.profile != null)
+            {
+                _currentProfileID = user.profile.avatar_id;
+                UpdateAllImages(_currentProfileID);
+            }
         }
-
-        _username.text = ApiClient.GetPlayer().GetUsername();
-        //if ((UserData.player.user.profile != null) && !string.IsNullOrEmpty(UserData.player.user.profile.nickname))
-        //    _username.text = UserData.player.user.profile.nickname;
-        //else
-        //{
-        //    if (!string.IsNullOrEmpty((string)UserData.player.user.username))
-        //        _username.text = (string)UserData.player.user.username;
-        //    else
-        //        if (!string.IsNullOrEmpty(UserData.player.user.name))
-        //        _username.text = UserData.player.user.name;
-        //    else
-        //        _username.text = UserData.player.user.email;
-        //}
-
     }
 
     public void SetProfile(int id)
     {
         _currentProfileID = id;
-        Avatar.sprite = AvatarsConfig.Instance.Avatars[_currentProfileID].sprite;
+
+        UpdateAllImages(_currentProfileID);
+
+        UpdateProfile();
+    }
+
+    private void UpdateAllImages(int id)
+    {
+        if (AvatarsConfig.Instance == null || AvatarsConfig.Instance.Avatars == null) return;
+
+        if (id >= 0 && id < AvatarsConfig.Instance.Avatars.Count)
+        {
+            Sprite selectedSprite = AvatarsConfig.Instance.Avatars[id].sprite;
+
+            if (Avatar != null) Avatar.sprite = selectedSprite;
+            if (AvatarinSelectAvatar != null) AvatarinSelectAvatar.sprite = selectedSprite;
+            if (avatarImageProfile != null) avatarImageProfile.sprite = selectedSprite;
+            if (avatarImageHome != null) avatarImageHome.sprite = selectedSprite;
+        }
     }
 
     public void UpdateProfile()
     {
         var currentprofile = new ApiClient.Profile();
-        if (!string.IsNullOrEmpty(_username.text))
-            currentprofile.nickname = _username.text;
+
+        // if (!string.IsNullOrEmpty(_username.text)) currentprofile.nickname = _username.text;
+
         currentprofile.avatar_id = _currentProfileID;
 
+        // if (LoadingHandler.Get() != null) LoadingHandler.Get().SetVisible(true);
 
-        ApiClient.Get().UpdateProfile(currentprofile, onsuccess, onFail);
-        LoadingHandler.Get().SetVisible(true);
+        ApiClient.Get().UpdateProfile(currentprofile, onUpdateSuccess, OnFail);
     }
 
-    private void onFail(string obj)
+    private void OnFail(string errorMsg)
     {
-        Debug.Log("fail");
-        LoadingHandler.Get().SetVisible(true);
-        NotificationController.Get().Show(obj);
+        Debug.LogError("Error: " + errorMsg);
+
+        if (LoadingHandler.Get() != null) LoadingHandler.Get().SetVisible(false);
+        if (NotificationController.Get() != null) NotificationController.Get().Show(errorMsg);
     }
 
-    private void onsuccess(ApiResponse<User> response)
+    private void onUpdateSuccess(ApiResponse<User> response)
     {
-        Debug.Log("update success");
-        LoadingHandler.Get().SetVisible(false);
-        NotificationController.Get().Show("Profile Updated Successfully");
-    }
+        Debug.Log("Update success");
 
+        if (LoadingHandler.Get() != null) LoadingHandler.Get().SetVisible(false);
+        if (NotificationController.Get() != null) NotificationController.Get().Show("Profile Updated Successfully");
+    }
 
     public void LogOut()
     {
         PlayerPrefs.DeleteKey("token");
         SceneManager.LoadScene(0);
     }
-
-
 }

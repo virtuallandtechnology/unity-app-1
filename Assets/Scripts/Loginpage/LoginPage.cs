@@ -1,4 +1,5 @@
-﻿using TMPro;
+﻿using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -8,13 +9,17 @@ public class LoginPage : BootStrapBasePanel
 {
     [SerializeField] private TMP_InputField _loginusername;
     [SerializeField] private TMP_InputField _loginpassword;
+   
+    [SerializeField] private GameObject LoginePopup;
+    public Action LoginAction;
 
     public override void Show()
     {
         base.Show();
         _loginusername.text = PlayerPrefs.HasKey("username") ? PlayerPrefs.GetString("username") : "";
-        _loginpassword.text = "";
+       
     }
+    
     public void Login()
     {
         if (!GetVisible())
@@ -34,19 +39,22 @@ public class LoginPage : BootStrapBasePanel
     private void OnFail(string obj)
     {
         // _log.text = obj;
-        NotificationController.Get().Show(obj);
-        LoadingHandler.Get().SetVisible(false);
+        print(obj);
+       // NotificationController.Get().Show(obj);
+        //LoadingHandler.Get().SetVisible(false);
     }
 
     private void OnSuccess(ApiResponse<UserData> response)
     {
+        print(response + "RRRRRRRRR");
         LoadingHandler.Get().SetVisible(false);
         Debug.Log(response.result);
-        PlayerPrefs.SetString("username", _loginusername.text);
+        PlayerPrefs.SetString("username", response.result.user.profile.nickname);
         string token = response.result.token;
         PlayerPrefs.SetString("token", token);
-
-        SceneManager.LoadScene(1);
+        LoginAction.Invoke();
+        LoginePopup.SetActive(false);
+       // SceneManager.LoadScene(1);
 
     }
 

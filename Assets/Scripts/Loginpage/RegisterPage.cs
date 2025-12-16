@@ -1,4 +1,5 @@
-﻿using TMPro;
+﻿using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -11,6 +12,7 @@ public class RegisterPage : BootStrapBasePanel
     [SerializeField] private TMP_InputField _password1;
     [SerializeField] private TMP_InputField _password2;
     [SerializeField] private GameObject Home;
+    public Action<string> RegisterAction;
 
 
     public void Register()
@@ -47,8 +49,12 @@ public class RegisterPage : BootStrapBasePanel
         LoadingHandler.Get().SetVisible(false);
         Debug.Log(response.result);
         string token = response.result.token;
+       
         PlayerPrefs.SetString("token", token);
-        //SceneManager.LoadScene(1);
+        //Debug.Log(response.result.user.profile.nickname + " FFFFFFFFFFFFFFFFFFFFFFFFFFF");
+        PlayerPrefs.SetString("username", _name.text);
+        _root.SetActive(false);
         Home.SetActive(true);
+        RegisterAction.Invoke(token);
     }
 }
