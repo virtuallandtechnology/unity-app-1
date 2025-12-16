@@ -10,6 +10,7 @@ public class BootStrapController : MonoBehaviour
     public RegisterPage _registerpage;
     public UpdatePage _updatepage;
     public NoInternetPanel _noInternetpage;
+    public GameObject Home;
 
     [SerializeField] private Button _LoginButton;
     [SerializeField] private Button _RegisterButton;
@@ -100,7 +101,7 @@ public class BootStrapController : MonoBehaviour
     {
         if (AutoLogin && (PlayerPrefs.HasKey("token")))
         {
-            SceneManager.LoadScene(1);
+            Home.gameObject.SetActive(true);
         }
         else
         {

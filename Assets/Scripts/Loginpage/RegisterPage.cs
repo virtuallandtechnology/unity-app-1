@@ -10,6 +10,7 @@ public class RegisterPage : BootStrapBasePanel
     [SerializeField] private TMP_InputField _email;
     [SerializeField] private TMP_InputField _password1;
     [SerializeField] private TMP_InputField _password2;
+    [SerializeField] private GameObject Home;
 
 
     public void Register()
@@ -47,6 +48,7 @@ public class RegisterPage : BootStrapBasePanel
         Debug.Log(response.result);
         string token = response.result.token;
         PlayerPrefs.SetString("token", token);
-        SceneManager.LoadScene(1);
+        //SceneManager.LoadScene(1);
+        Home.SetActive(true);
     }
 }
