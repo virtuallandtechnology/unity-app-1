@@ -1,6 +1,7 @@
 ﻿using Best.HTTP;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 
@@ -31,6 +32,14 @@ public partial class ApiClient
         public T result;
         public int code;
         public object errors;
+    }
+    [Serializable]
+    public class Wallet
+    {
+        public int id;
+        public string title;
+        public string balance; 
+        public string currency;
     }
 
 
@@ -116,7 +125,24 @@ public partial class ApiClient
 
 
 
+    public void GetWallets(Action<ApiResponse<List<Wallet>>> onSuccess, Action<string> onFail)
+    {
+        string token = PlayerPrefs.GetString("token");
+        if (string.IsNullOrEmpty(token))
+        {
+            onFail?.Invoke("Token is missing. Please Login first.");
+            return;
+        }
 
+        string url = GameConfig.Instance.BaseURL + "/user/profile/wallets";
+
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
+            (req, resp) => HandleResponse<List<Wallet>>(req, resp, onSuccess, onFail));
+
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.AddHeader("Accept", "application/json");
+        request.Send();
+    }
 
 
     public void ProfileInfo(string token,
@@ -258,31 +284,29 @@ public partial class ApiClient
 public partial class ApiClient
 {
 
-    public void Login(string username, string password,
-       Action<ApiResponse<UserData>> onSuccess, Action<string> onFail)
+    public void Login(string username, string password, Action<ApiResponse<UserData>> onSuccess, Action<string> onFail)
     {
         string url = GameConfig.Instance.BaseURL + "/auth/login";
-        Debug.Log("url=" + url);
         var t = new loginclass() { email = username, password = password };
-        Debug.Log("data=" + JsonUtility.ToJson(t));
 
-        var request = new HTTPRequest(new System.Uri(url), HTTPMethods.Post,
-            (req, resp) => HandleResponse(req, resp, (ApiResponse<UserData> t) =>
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Post,
+            (req, resp) => HandleResponse(req, resp, (ApiResponse<UserData> response) =>
             {
-                playerUserId = t.result.user.id;
-                Debug.Log("playerUserId is set to" + t.result.user.id.ToString());
-                Setplayer(t.result.user);
-                onSuccess.Invoke(t);
+                if (response.result != null)
+                {
+                    PlayerPrefs.SetString("token", response.result.token);
+                    PlayerPrefs.SetString("username", response.result.user.GetUsername());
+                    PlayerPrefs.Save();
+
+                    Setplayer(response.result.user);
+                }
+
+                onSuccess.Invoke(response);
             }, onFail));
 
-
         request.AddHeader("Content-Type", "application/json");
-
-        byte[] body = Encoding.UTF8.GetBytes(JsonUtility.ToJson(t));
+        byte[] body = System.Text.Encoding.UTF8.GetBytes(JsonUtility.ToJson(t));
         request.UploadSettings.UploadStream = new System.IO.MemoryStream(body);
-
-        request.AddHeader("Content-Length", body.Length.ToString());
-
         request.Send();
     }
 
