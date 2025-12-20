@@ -15,6 +15,7 @@ public class UpdatePage : BootStrapBasePanel
 
     public void ShowUpdate(string cuversion, string newversion, string description, Action update, Action skip)
     {
+        _root.GetComponent<CanvasGroup>().blocksRaycasts = true;
         _title.text = "UPDATE";
         _currentVersion.text = "CurrentVersion: " + cuversion;
         _NewVersion.text = "New Version: " + newversion;
@@ -29,6 +30,7 @@ public class UpdatePage : BootStrapBasePanel
 
     public void ShowForceUpdate(string cuversion, string newversion, string description, Action update, Action skip)
     {
+        _root.GetComponent<CanvasGroup>().blocksRaycasts = true;
         _title.text = "FORCE UPDATE";
         _currentVersion.text = "CurrentVersion: " + cuversion;
         _NewVersion.text = "New Version: " + newversion;

@@ -10,6 +10,7 @@ public partial class ApiClient
     private static ApiClient instance;
     private GameConfig _config;
     private UserData _userdata;
+
     public static ApiClient Get()
     {
         if (instance != null)
@@ -17,7 +18,6 @@ public partial class ApiClient
         else
             return new ApiClient();
     }
-
 
     public UserData GetUserData()
     {
@@ -33,15 +33,42 @@ public partial class ApiClient
         public int code;
         public object errors;
     }
+
+    [Serializable]
+    public class WalletType
+    {
+        public int id;
+        public string name;
+        public string slug;
+        public string image;
+        public string description;
+    }
+
     [Serializable]
     public class Wallet
     {
-        public int id;
-        public string title;
-        public string balance; 
-        public string currency;
+        public double balance;
+        public WalletType wallet_type;
     }
 
+    public void GetWallets(Action<ApiResponse<List<Wallet>>> onSuccess, Action<string> onFail)
+    {
+        string token = PlayerPrefs.GetString("token");
+        if (string.IsNullOrEmpty(token))
+        {
+            onFail?.Invoke("Token is missing");
+            return;
+        }
+
+        string url = GameConfig.Instance.BaseURL + "/user/profile/wallets";
+
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
+            (req, resp) => HandleResponse<List<Wallet>>(req, resp, onSuccess, onFail));
+
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.AddHeader("Accept", "application/json");
+        request.Send();
+    }
 
     private void HandleResponse<T>(HTTPRequest request, HTTPResponse response,
         Action<ApiResponse<T>> onSuccess, Action<string> onFail) where T : class
@@ -50,7 +77,6 @@ public partial class ApiClient
         {
             case HTTPRequestStates.Finished:
                 Debug.Log(response.DataAsText);
-               // try
                 {
                     var apiResponse = JsonConvert.DeserializeObject<ApiResponse<T>>(response.DataAsText);
 
@@ -93,10 +119,6 @@ public partial class ApiClient
         }
     }
 
-
-
-
-
     [Serializable]
     public class Passwordclass
     {
@@ -123,28 +145,6 @@ public partial class ApiClient
         request.Send();
     }
 
-
-
-    public void GetWallets(Action<ApiResponse<List<Wallet>>> onSuccess, Action<string> onFail)
-    {
-        string token = PlayerPrefs.GetString("token");
-        if (string.IsNullOrEmpty(token))
-        {
-            onFail?.Invoke("Token is missing. Please Login first.");
-            return;
-        }
-
-        string url = GameConfig.Instance.BaseURL + "/user/profile/wallets";
-
-        var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
-            (req, resp) => HandleResponse<List<Wallet>>(req, resp, onSuccess, onFail));
-
-        request.AddHeader("Authorization", $"Bearer {token}");
-        request.AddHeader("Accept", "application/json");
-        request.Send();
-    }
-
-
     public void ProfileInfo(string token,
       Action<ApiResponse<User>> onSuccess, Action<string> onFail)
     {
@@ -164,26 +164,6 @@ public partial class ApiClient
         request.Send();
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     public class Latest
     {
         public string version { get; set; }
@@ -197,15 +177,11 @@ public partial class ApiClient
         public VERSIONINFO VERSION_INFO { get; set; }
     }
 
-
-
     public class VERSIONINFO
     {
         public Latest latest { get; set; }
         public string force_update { get; set; }
     }
-
-
 
     public void GetServerConfig(Action<ApiResponse<Result>> onSuccess, Action<string> onFail)
     {
@@ -245,6 +221,7 @@ public partial class ApiClient
 
         request.Send();
     }
+
     public void GetProfileInfo(Action<ApiResponse<User>> onSuccess, Action<string> onFail)
     {
         string token = PlayerPrefs.GetString("token");
@@ -257,7 +234,6 @@ public partial class ApiClient
         string url = GameConfig.Instance.BaseURL + "/user/profile/info";
         Debug.Log("[API] GetProfileInfo URL: " + url);
 
-        // 2. ساخت درخواست GET
         var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
             (req, resp) => HandleResponse<User>(req, resp, (ApiResponse<User> response) =>
             {
@@ -272,18 +248,12 @@ public partial class ApiClient
         request.AddHeader("Authorization", $"Bearer {token}");
         request.AddHeader("Accept", "application/json");
 
-      
         request.Send();
     }
-
-
 }
-
-
 
 public partial class ApiClient
 {
-
     public void Login(string username, string password, Action<ApiResponse<UserData>> onSuccess, Action<string> onFail)
     {
         string url = GameConfig.Instance.BaseURL + "/auth/login";
@@ -292,13 +262,13 @@ public partial class ApiClient
         var request = new HTTPRequest(new Uri(url), HTTPMethods.Post,
             (req, resp) => HandleResponse(req, resp, (ApiResponse<UserData> response) =>
             {
-                if (response.result != null)
+                if (response.result != null && response.result.user != null)
                 {
+                    Setplayer(response.result.user);
+
                     PlayerPrefs.SetString("token", response.result.token);
                     PlayerPrefs.SetString("username", response.result.user.GetUsername());
                     PlayerPrefs.Save();
-
-                    Setplayer(response.result.user);
                 }
 
                 onSuccess.Invoke(response);
@@ -322,11 +292,8 @@ public partial class ApiClient
     {
         public string token { get; set; }
         public string token_type { get; set; }
-        
         public User user { get; set; }
-       
     }
-
 
     public static int playerUserId = -1;
     private static User _player;
@@ -337,7 +304,6 @@ public partial class ApiClient
         _player = userdata;
     }
 
-
     [System.Serializable]
     public class User
     {
@@ -346,32 +312,35 @@ public partial class ApiClient
         public string username { get; set; }
         public string name { get; set; }
         public string email { get; set; }
-
-
         public bool email_verified { get; set; }
         public object email_verified_at { get; set; }
         public Profile profile { get; set; }
-
         public string created_at { get; set; }
 
         public string GetUsername()
         {
-            if ((GetPlayer().profile != null) &&
-                !string.IsNullOrEmpty(GetPlayer().profile.nickname))
-                return GetPlayer().profile.nickname;
-            else
+            if (profile != null && !string.IsNullOrEmpty(profile.nickname))
             {
-                if (!string.IsNullOrEmpty((string)GetPlayer().username))
-                    return (string)GetPlayer().username;
-                else
-                    if (!string.IsNullOrEmpty(GetPlayer().name))
-                    return GetPlayer().name;
-                else
-                    return GetPlayer().email;
+                return profile.nickname;
             }
+
+            if (!string.IsNullOrEmpty(username))
+            {
+                return username;
+            }
+
+            if (!string.IsNullOrEmpty(name))
+            {
+                return name;
+            }
+
+            if (!string.IsNullOrEmpty(email))
+            {
+                return email;
+            }
+
+            return "User_" + id;
         }
-
-
     }
 
     [System.Serializable]
@@ -381,4 +350,3 @@ public partial class ApiClient
         public string nickname { get; set; }
     }
 }
-
