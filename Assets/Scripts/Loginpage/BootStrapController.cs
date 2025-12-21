@@ -1,4 +1,5 @@
-﻿using TMPro;
+﻿using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using VirtualLand;
@@ -21,6 +22,7 @@ public class BootStrapController : MonoBehaviour
     [Header("Wallet Section")]
     [SerializeField] private WalletManager _walletManager;
     [SerializeField] private Button _openWalletButton;
+    public Transform WalletParent;
 
     public bool AutoLogin = false;
     public ForceUpdateData ForceUpdateData;
@@ -36,22 +38,25 @@ public class BootStrapController : MonoBehaviour
         _RegisterButton.onClick.RemoveAllListeners();
         _RegisterButton.onClick.AddListener(_registerpage.Register);
 
-        if (_openWalletButton != null)
-        {
-            _openWalletButton.onClick.RemoveAllListeners();
-            _openWalletButton.onClick.AddListener(OpenWalletPage);
-        }
+        //if (_openWalletButton != null && _walletManager != null)
+        //{
+        //    _openWalletButton.onClick.RemoveAllListeners();
+
+        //    _openWalletButton.onClick.AddListener(OpenWalletPage);
+        //}
 
         LoadingHandler.Get().SetVisible(true);
         Getverion();
+        ApiClient.Get().OnWalletsUpdated += OnWalletsReceivedForHome;
     }
 
     public void OpenWalletPage()
     {
-        if (_walletManager != null)
-        {
-            _walletManager.Show();
-        }
+        //if (_walletManager != null)
+        //{
+        //    _walletManager.gameObject.SetActive(true);
+        //    _walletManager.Show();
+        //}
     }
 
     private void Login()
@@ -78,7 +83,59 @@ public class BootStrapController : MonoBehaviour
         _buttonRoot.SetActive(false);
         _noInternetpage.Show();
     }
+    private void OnWalletsReceivedForHome(List<ApiClient.Wallet> wallets)
+    {
+        if (wallets == null) return;
 
+        List<string> activeSlugs = new List<string>();
+
+        foreach (var wallet in wallets)
+        {
+            string slug = wallet.wallet_type.slug;
+            string balance = wallet.balance.ToString("N0");
+            activeSlugs.Add(slug);
+
+            Transform existingChild = WalletParent.Find(slug);
+
+            if (existingChild != null)
+            {
+                var itemScript = existingChild.GetComponent<WalletItem>();
+                if (itemScript != null) itemScript.Setup(slug, balance);
+            }
+            else
+            {
+
+                var newItem = Instantiate(_openWalletButton, WalletParent);
+
+                newItem.name = slug;
+                newItem.gameObject.SetActive(true);
+
+                var itemScript = newItem.GetComponent<WalletItem>();
+                if (itemScript != null) itemScript.Setup(slug, balance);
+
+                var btn = newItem.GetComponent<Button>();
+                if (btn != null)
+                {
+                    btn.onClick.RemoveAllListeners();
+                    btn.onClick.AddListener(() =>
+                    {
+                        if (_walletManager != null) _walletManager.gameObject.SetActive(true); _walletManager.Show();
+                    });
+                }
+            }
+        }
+
+
+        for (int i = WalletParent.childCount - 1; i >= 0; i--)
+        {
+            Transform child = WalletParent.GetChild(i);
+            
+            if (!activeSlugs.Contains(child.name) && child.gameObject != _openWalletButton.gameObject)
+            {
+                Destroy(child.gameObject);
+            }
+        }
+    }
     private void onGetVersionSuccess(ApiClient.ApiResponse<ApiClient.Result> response)
     {
         LoadingHandler.Get().SetVisible(false);
@@ -135,13 +192,18 @@ public class BootStrapController : MonoBehaviour
                 }
             }, (fail) => { });
 
-         
-            if (_walletManager != null) _walletManager.FetchWallets();
+
+            ApiClient.Get().RequestWalletsUpdate();
         }
         else
         {
             _loginpage.Show();
             _buttonRoot.SetActive(true);
         }
+    }
+    private void OnDestroy()
+    {
+      
+        ApiClient.Get().OnWalletsUpdated -= OnWalletsReceivedForHome;
     }
 }

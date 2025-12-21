@@ -13,12 +13,12 @@ public partial class ApiClient
 
     public static ApiClient Get()
     {
-        if (instance != null)
-            return instance;
-        else
-            return new ApiClient();
+        if (instance == null)
+        {
+            instance = new ApiClient();
+        }
+        return instance;
     }
-
     public UserData GetUserData()
     {
         return _userdata;
@@ -50,7 +50,10 @@ public partial class ApiClient
         public double balance;
         public WalletType wallet_type;
     }
+    public event Action<List<Wallet>> OnWalletsUpdated;
 
+    private List<Wallet> _cachedWallets;
+    public List<Wallet> CachedWallets => _cachedWallets;
     public void GetWallets(Action<ApiResponse<List<Wallet>>> onSuccess, Action<string> onFail)
     {
         string token = PlayerPrefs.GetString("token");
@@ -69,7 +72,96 @@ public partial class ApiClient
         request.AddHeader("Accept", "application/json");
         request.Send();
     }
+    [Serializable]
+    public class PaymentStartRequest
+    {
+        public string amount;
+        public string base_token;      // مثلا "USDT"
+        public string available_tokens; // مثلا "BTC,USDT"
+    }
 
+    [Serializable]
+    public class PaymentStartResult
+    {
+        public long payment_id;
+        public string order_id;
+        public string code;
+        public string redirect;
+    }
+
+    [Serializable]
+    public class PaymentVerificationRequest
+    {
+        public int user_id;
+        public string msisdn;
+        public double amount;
+        public string description;
+        public string national_code;
+    }
+
+
+    public void StartEasyBitPayment(string amount, Action<ApiResponse<PaymentStartResult>> onSuccess, Action<string> onFail)
+    {
+        string token = PlayerPrefs.GetString("token");
+
+        string url = GameConfig.Instance.BaseURL + "/user/payments/easybitpay/start";
+
+        var data = new PaymentStartRequest
+        {
+            amount = amount,
+            base_token = "USDT",
+            available_tokens = "BTC,USDT"
+        };
+
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Post,
+            (req, resp) => HandleResponse<PaymentStartResult>(req, resp, onSuccess, onFail));
+
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.AddHeader("Content-Type", "application/json");
+
+        byte[] body = System.Text.Encoding.UTF8.GetBytes(JsonUtility.ToJson(data));
+        request.UploadSettings.UploadStream = new System.IO.MemoryStream(body);
+
+        request.Send();
+    }
+
+
+    public void VerifyEasyBitPayment(PaymentVerificationRequest data, Action<ApiResponse<object>> onSuccess, Action<string> onFail)
+    {
+        string token = PlayerPrefs.GetString("token");
+        string url = GameConfig.Instance.BaseURL + "/payments/easybitpay/callback";
+
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Post,
+            (req, resp) => HandleResponse<object>(req, resp, onSuccess, onFail));
+
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.AddHeader("Content-Type", "application/json");
+
+
+        byte[] body = System.Text.Encoding.UTF8.GetBytes(JsonUtility.ToJson(data));
+        request.UploadSettings.UploadStream = new System.IO.MemoryStream(body);
+
+        request.Send();
+    }
+    public void RequestWalletsUpdate()
+    {
+        GetWallets(
+            (response) =>
+            {
+                if (response.isSuccess && response.result != null)
+                {
+                    _cachedWallets = response.result;
+
+                
+                    OnWalletsUpdated?.Invoke(response.result);
+                }
+            },
+            (error) =>
+            {
+                Debug.LogError("Wallet Update Failed: " + error);
+            }
+        );
+    }
     private void HandleResponse<T>(HTTPRequest request, HTTPResponse response,
         Action<ApiResponse<T>> onSuccess, Action<string> onFail) where T : class
     {

@@ -6,90 +6,118 @@ using DG.Tweening;
 
 public class WalletManager : MonoBehaviour
 {
+    [Header("UI References")]
     [SerializeField] private WalletItem _walletPrefab;
     [SerializeField] private Transform _walletContainer;
     [SerializeField] private TextMeshProUGUI _noWalletText;
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private Button _closeButton;
+    [SerializeField] private GameObject _loadingIndicator;
 
     private void Start()
     {
-        if (_closeButton != null)
-            _closeButton.onClick.AddListener(Hide);
+        if (_closeButton != null) _closeButton.onClick.AddListener(Hide);
 
-        gameObject.SetActive(false);
-        if (_canvasGroup != null) _canvasGroup.alpha = 0;
-        transform.localScale = Vector3.zero;
+        //if (_canvasGroup != null)
+        //{
+        //    _canvasGroup.alpha = 0;
+        //    _canvasGroup.blocksRaycasts = false; 
+        //    _canvasGroup.interactable = false; 
+        //}
+
+        if (_loadingIndicator != null) _loadingIndicator.SetActive(false);
+
+      //  gameObject.SetActive(false);
+    }
+
+    private void OnEnable()
+    {
+        ApiClient.Get().OnWalletsUpdated += UpdateWalletUI;
+    }
+
+    private void OnDisable()
+    {
+        ApiClient.Get().OnWalletsUpdated -= UpdateWalletUI;
     }
 
     public void Show()
     {
-        gameObject.SetActive(true);
+        //transform.DOKill();
+        //if (_canvasGroup != null) _canvasGroup.DOKill();
 
-        transform.localScale = Vector3.zero;
-        if (_canvasGroup != null) _canvasGroup.alpha = 0;
 
-        transform.DOScale(Vector3.one, 0.4f).SetEase(Ease.OutBack);
-        if (_canvasGroup != null) _canvasGroup.DOFade(1f, 0.4f);
 
-        FetchWallets();
+        //transform.localScale = Vector3.zero;
+        if (_canvasGroup != null)
+        {
+            _canvasGroup.alpha = 1;
+            _canvasGroup.blocksRaycasts = true;
+            _canvasGroup.interactable = true;
+        }
+
+        //transform.DOScale(Vector3.one, 0.4f).SetEase(Ease.OutBack);
+        //if (_canvasGroup != null) _canvasGroup.DOFade(1f, 0.4f);
+
+        //if (_loadingIndicator != null) _loadingIndicator.SetActive(true);
+
+        ClearContainer();
+        if (_noWalletText) _noWalletText.gameObject.SetActive(false);
+
+        ApiClient.Get().RequestWalletsUpdate();
+      //  gameObject.SetActive(true);
     }
 
     public void Hide()
     {
-        transform.DOScale(Vector3.zero, 0.3f).SetEase(Ease.InBack);
-        if (_canvasGroup != null) _canvasGroup.DOFade(0f, 0.3f).OnComplete(() =>
+        transform.DOKill();
+        if (_canvasGroup != null) _canvasGroup.DOKill();
+
+        if (_canvasGroup != null)
         {
-            gameObject.SetActive(false);
-        });
+            _canvasGroup.blocksRaycasts = false;
+            _canvasGroup.interactable = false;
+        }
+
+        transform.DOScale(Vector3.zero, 0.3f).SetEase(Ease.InBack);
+        if (_canvasGroup != null)
+        {
+            _canvasGroup.DOFade(0f, 0.3f).OnComplete(() =>
+            {
+                gameObject.SetActive(false);
+            });
+        }
     }
 
-    public void FetchWallets()
+    private void UpdateWalletUI(List<ApiClient.Wallet> wallets)
     {
-        ApiClient.Get().GetWallets(OnSuccess, OnFail);
-    }
+        if (_loadingIndicator != null) _loadingIndicator.SetActive(false);
 
-    private void OnSuccess(ApiClient.ApiResponse<List<ApiClient.Wallet>> response)
-    {
         ClearContainer();
 
-        if (response.isSuccess && response.result != null && response.result.Count > 0)
+        if (wallets != null && wallets.Count > 0)
         {
-            _noWalletText.gameObject.SetActive(false);
+            if (_noWalletText) _noWalletText.gameObject.SetActive(false);
 
-            foreach (var wallet in response.result)
+            foreach (var wallet in wallets)
             {
                 WalletItem item = Instantiate(_walletPrefab, _walletContainer);
                 string wName = wallet.wallet_type != null ? wallet.wallet_type.name : "Unknown";
-                item.Setup(wName, wallet.balance.ToString());
+                string balanceStr = wallet.balance.ToString("N0");
+                item.Setup(wName, balanceStr);
             }
         }
         else
         {
-            ShowNoWalletMessage();
+            if (_noWalletText)
+            {
+                _noWalletText.gameObject.SetActive(true);
+                _noWalletText.text = "No wallets found";
+            }
         }
-    }
-
-    private void OnFail(string error)
-    {
-        ClearContainer();
-        ShowNoWalletMessage();
     }
 
     private void ClearContainer()
     {
-        foreach (Transform child in _walletContainer)
-        {
-            Destroy(child.gameObject);
-        }
-    }
-
-    private void ShowNoWalletMessage()
-    {
-        if (_noWalletText != null)
-        {
-            _noWalletText.text = "No wallets registered";
-            _noWalletText.gameObject.SetActive(true);
-        }
+        foreach (Transform child in _walletContainer) Destroy(child.gameObject);
     }
 }
