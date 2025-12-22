@@ -287,6 +287,26 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 3372042605426526058, guid: 1625830a2a9fa4fceb6b1a56a785439e, type: 3}
   m_PrefabInstance: {fileID: 2117106921}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &287100565
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 876594106}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e0f0a70dd384a2488d4a7c4dfa1a572, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChargePanelController
+  _amountInput: {fileID: 876594111}
+  _phoneNumberInput: {fileID: 876594110}
+  _payButton: {fileID: 876594109}
+  _checkStatusButton: {fileID: 876594108}
+  _closeButton: {fileID: 876594112}
+  _loadingObj: {fileID: 296575594}
+  _canvasGroup: {fileID: 876594107}
+  animDuration: 0.4
 --- !u!1 &296575594
 GameObject:
   m_ObjectHideFlags: 0
@@ -304,7 +324,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &296575595
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1347,6 +1367,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7960969493275356231, guid: 83681b6b6092a47ffb6e59980424dea9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 876594107}
+    - targetCorrespondingSourceObject: {fileID: 7960969493275356231, guid: 83681b6b6092a47ffb6e59980424dea9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 287100565}
   m_SourcePrefab: {fileID: 100100000, guid: 83681b6b6092a47ffb6e59980424dea9, type: 3}
 --- !u!224 &876594105 stripped
 RectTransform:
@@ -4829,6 +4852,7 @@ GameObject:
   - component: {fileID: 6000206834338119322}
   - component: {fileID: 4904026059780372407}
   - component: {fileID: 72308668}
+  - component: {fileID: 6000206834338119323}
   m_Layer: 5
   m_Name: BG
   m_TagString: Untagged
@@ -5526,7 +5550,6 @@ GameObject:
   - component: {fileID: 4577031592976090721}
   - component: {fileID: 4577031592976090724}
   - component: {fileID: 4577031592976090723}
-  - component: {fileID: 4577031592976090725}
   m_Layer: 5
   m_Name: Wallet's
   m_TagString: Untagged
@@ -5564,26 +5587,8 @@ MonoBehaviour:
   _canvasGroup: {fileID: 4577031592976090723}
   _closeButton: {fileID: 4577031592158696634}
   _loadingIndicator: {fileID: 0}
---- !u!114 &4577031592976090725
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4577031592976090722}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3e0f0a70dd384a2488d4a7c4dfa1a572, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ChargePanelController
-  _amountInput: {fileID: 876594111}
-  _phoneNumberInput: {fileID: 876594110}
-  _payButton: {fileID: 876594109}
-  _checkStatusButton: {fileID: 876594108}
-  _closeButton: {fileID: 876594112}
-  _loadingObj: {fileID: 296575594}
-  _canvasGroup: {fileID: 876594107}
-  animDuration: 0.4
+  _toggleGroup: {fileID: 6000206834338119323}
+  _chargePanel: {fileID: 287100565}
 --- !u!222 &4577031593161813792
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -6563,6 +6568,19 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &6000206834338119323
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2992977719414263407}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fafe2cfe61f6974895a912c3755e8f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.ToggleGroup
+  m_AllowSwitchOff: 0
 --- !u!114 &6098914111561125590
 MonoBehaviour:
   m_ObjectHideFlags: 0

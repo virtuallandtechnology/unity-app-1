@@ -13,6 +13,8 @@ public class WalletManager : MonoBehaviour
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private Button _closeButton;
     [SerializeField] private GameObject _loadingIndicator;
+    [SerializeField] private ToggleGroup _toggleGroup; 
+    [SerializeField] private ChargePanelController _chargePanel; 
 
     private void Start()
     {
@@ -42,12 +44,12 @@ public class WalletManager : MonoBehaviour
 
     public void Show()
     {
-        //transform.DOKill();
-        //if (_canvasGroup != null) _canvasGroup.DOKill();
+        transform.DOKill();
+        if (_canvasGroup != null) _canvasGroup.DOKill();
 
 
 
-        //transform.localScale = Vector3.zero;
+        transform.localScale = Vector3.zero;
         if (_canvasGroup != null)
         {
             _canvasGroup.alpha = 1;
@@ -55,10 +57,10 @@ public class WalletManager : MonoBehaviour
             _canvasGroup.interactable = true;
         }
 
-        //transform.DOScale(Vector3.one, 0.4f).SetEase(Ease.OutBack);
-        //if (_canvasGroup != null) _canvasGroup.DOFade(1f, 0.4f);
+        transform.DOScale(Vector3.one, 0.4f).SetEase(Ease.OutBack);
+        if (_canvasGroup != null) _canvasGroup.DOFade(1f, 0.4f);
 
-        //if (_loadingIndicator != null) _loadingIndicator.SetActive(true);
+        if (_loadingIndicator != null) _loadingIndicator.SetActive(true);
 
         ClearContainer();
         if (_noWalletText) _noWalletText.gameObject.SetActive(false);
@@ -92,19 +94,25 @@ public class WalletManager : MonoBehaviour
     private void UpdateWalletUI(List<ApiClient.Wallet> wallets)
     {
         if (_loadingIndicator != null) _loadingIndicator.SetActive(false);
-
         ClearContainer();
 
         if (wallets != null && wallets.Count > 0)
         {
             if (_noWalletText) _noWalletText.gameObject.SetActive(false);
 
+            bool isFirst = true;
+
             foreach (var wallet in wallets)
             {
                 WalletItem item = Instantiate(_walletPrefab, _walletContainer);
-                string wName = wallet.wallet_type != null ? wallet.wallet_type.name : "Unknown";
-                string balanceStr = wallet.balance.ToString("N0");
-                item.Setup(wName, balanceStr);
+
+                item.Setup(wallet, _toggleGroup, OnWalletSelected);
+
+                if (isFirst)
+                {
+                    item.GetComponent<Toggle>().isOn = true;
+                    isFirst = false;
+                }
             }
         }
         else
@@ -114,6 +122,16 @@ public class WalletManager : MonoBehaviour
                 _noWalletText.gameObject.SetActive(true);
                 _noWalletText.text = "No wallets found";
             }
+        }
+    }
+    private void OnWalletSelected(string slug)
+    {
+        if (_chargePanel != null)
+        {
+            _chargePanel.SetSelectedWalletToken(slug);
+
+           
+             _chargePanel.Show(); 
         }
     }
 

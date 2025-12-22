@@ -100,17 +100,16 @@ public partial class ApiClient
     }
 
 
-    public void StartEasyBitPayment(string amount, Action<ApiResponse<PaymentStartResult>> onSuccess, Action<string> onFail)
+    public void StartEasyBitPayment(string amount, string baseToken, Action<ApiResponse<PaymentStartResult>> onSuccess, Action<string> onFail)
     {
         string token = PlayerPrefs.GetString("token");
-
         string url = GameConfig.Instance.BaseURL + "/user/payments/easybitpay/start";
 
         var data = new PaymentStartRequest
         {
             amount = amount,
-            base_token = "USDT",
-            available_tokens = "BTC,USDT"
+            base_token = baseToken,
+            available_tokens = "BTC,USDT" 
         };
 
         var request = new HTTPRequest(new Uri(url), HTTPMethods.Post,

@@ -14,6 +14,7 @@ public class ChargePanelController : MonoBehaviour
     [SerializeField] private Button _closeButton;
     [SerializeField] private GameObject _loadingObj; 
     [SerializeField] private CanvasGroup _canvasGroup;
+    private string _selectedBaseToken = "USDT"; 
 
     [Header("Settings")]
     public float animDuration = 0.4f;
@@ -43,7 +44,7 @@ public class ChargePanelController : MonoBehaviour
         transform.localScale = Vector3.zero;
         if (_canvasGroup != null) _canvasGroup.alpha = 0;
 
-        transform.DOScale(Vector3.one, animDuration).SetEase(Ease.OutBack);
+        transform.DOScale(new Vector3(0.7f, 0.7f, 0.7f), animDuration).SetEase(Ease.OutBack);
         if (_canvasGroup != null) _canvasGroup.DOFade(1f, animDuration);
     }
 
@@ -51,8 +52,13 @@ public class ChargePanelController : MonoBehaviour
     {
         transform.DOScale(Vector3.zero, animDuration * 0.8f).SetEase(Ease.InBack)
             .OnComplete(() => gameObject.SetActive(false));
-        transform.DOKill();
-        transform.localScale = Vector3.one;
+        //transform.DOKill();
+        //transform.localScale = new Vector3(0.7f,0.7f,0.7f);
+    }
+    public void SetSelectedWalletToken(string slug)
+    {
+        _selectedBaseToken = slug;
+        Debug.Log("Wallet Selected for Payment: " + _selectedBaseToken);
     }
 
     private void OnPayClicked()
@@ -66,23 +72,19 @@ public class ChargePanelController : MonoBehaviour
 
         SetLoading(true);
 
-        // 1. فراخوانی API اول برای دریافت لینک
-        ApiClient.Get().StartEasyBitPayment(amount,
+        ApiClient.Get().StartEasyBitPayment(amount, _selectedBaseToken,
             (response) => {
                 SetLoading(false);
                 if (response.isSuccess && response.result != null)
                 {
                     _lastOrderId = response.result.order_id;
-
                     Application.OpenURL(response.result.redirect);
-
                     _checkStatusButton.interactable = true;
-                  //  NotificationController.Get().Show("مرورگر باز شد. پس از پرداخت دکمه بررسی را بزنید.");
                 }
             },
             (error) => {
                 SetLoading(false);
-               // NotificationController.Get().Show("خطا در ایجاد درگاه: " + error);
+                NotificationController.Get().Show("خطا در ایجاد درگاه: " + error);
             }
         );
     }
