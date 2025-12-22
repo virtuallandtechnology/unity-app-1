@@ -51,6 +51,8 @@ public class ChargePanelController : MonoBehaviour
     {
         transform.DOScale(Vector3.zero, animDuration * 0.8f).SetEase(Ease.InBack)
             .OnComplete(() => gameObject.SetActive(false));
+        transform.DOKill();
+        transform.localScale = Vector3.one;
     }
 
     private void OnPayClicked()

@@ -78,7 +78,7 @@ public class WalletManager : MonoBehaviour
             _canvasGroup.interactable = false;
         }
 
-        transform.DOScale(Vector3.zero, 0.3f).SetEase(Ease.InBack);
+      //  transform.DOScale(Vector3.zero, 0.3f).SetEase(Ease.InBack);
         if (_canvasGroup != null)
         {
             _canvasGroup.DOFade(0f, 0.3f).OnComplete(() =>
@@ -86,6 +86,7 @@ public class WalletManager : MonoBehaviour
                 gameObject.SetActive(false);
             });
         }
+        
     }
 
     private void UpdateWalletUI(List<ApiClient.Wallet> wallets)
