@@ -33,6 +33,103 @@ public partial class ApiClient
         public int code;
         public object errors;
     }
+    [Serializable]
+    public class ShopResponse
+    {
+        public ShopResult result;
+    }
+
+    [Serializable]
+    public class ShopResult
+    {
+        public int current_page;
+        public int last_page;
+        public List<ShopProduct> data;
+    }
+
+    [Serializable]
+    public class ShopProduct
+    {
+        public int id;
+        public string title;
+        public string description;
+        public string image; // URL
+        public List<ProductPrice> price;
+        public int in_stock;
+     
+    }
+
+    [Serializable]
+    public class ProductPrice
+    {
+        public double price;
+        public string payable; 
+    }
+
+    [Serializable]
+    public class BuyProductRequest
+    {
+        public int product_id;
+        public string payable_slug;
+        public Dictionary<string, string> metadata;
+    }
+    public void GetShopProducts(int page, Action<ApiResponse<ShopResult>> onSuccess, Action<string> onFail)
+    {
+        string token = PlayerPrefs.GetString("token");
+        string url = $"{GameConfig.Instance.BaseURL}/user/products?page={page}";
+
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
+            (req, resp) => HandleResponse<ShopResult>(req, resp, onSuccess, onFail));
+
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.Send();
+    }
+    public void GetProductsByCategory(string categorySlug, Action<ApiResponse<ShopResult>> onSuccess, Action<string> onFail)
+    {
+        string token = PlayerPrefs.GetString("token");
+        // مثال: /user/products/Cars
+        string url = $"{GameConfig.Instance.BaseURL}/user/products/{categorySlug}";
+
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
+            (req, resp) => HandleResponse<ShopResult>(req, resp, onSuccess, onFail));
+
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.Send();
+    }
+
+    public void GetPurchasedProducts(string categorySlug, Action<ApiResponse<List<ShopProduct>>> onSuccess, Action<string> onFail)
+    {
+        string token = PlayerPrefs.GetString("token");
+        string url = $"{GameConfig.Instance.BaseURL}/user/profile/products/{categorySlug}";
+
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
+            (req, resp) => HandleResponse<List<ShopProduct>>(req, resp, onSuccess, onFail));
+
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.Send();
+    }
+    public void BuyProduct(int productId, string payableSlug, Action<ApiResponse<object>> onSuccess, Action<string> onFail)
+    {
+        string token = PlayerPrefs.GetString("token");
+        string url = $"{GameConfig.Instance.BaseURL}/user/products/buy";
+
+        var data = new BuyProductRequest
+        {
+            product_id = productId,
+            payable_slug = payableSlug
+        };
+
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Post,
+            (req, resp) => HandleResponse<object>(req, resp, onSuccess, onFail));
+
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.AddHeader("Content-Type", "application/json");
+
+        byte[] body = System.Text.Encoding.UTF8.GetBytes(JsonUtility.ToJson(data));
+        request.UploadSettings.UploadStream = new System.IO.MemoryStream(body);
+
+        request.Send();
+    }
 
     [Serializable]
     public class WalletType
