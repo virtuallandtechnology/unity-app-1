@@ -8,13 +8,16 @@ public class ShopManager : MonoBehaviour
 
     [Header("Configuration")]
     [SerializeField] private ShopMode _currentMode = ShopMode.Store;
-    [SerializeField] private string _defaultCategory = "Cars";
+    [SerializeField] private string _defaultCategory = "CARS"; // Use slug
 
     [Header("UI References")]
     [SerializeField] private Transform _itemsContainer;
     [SerializeField] private ShopItemUI _itemPrefab;
     [SerializeField] private GameObject _loadingSpinner;
-    [SerializeField] private List<CategoryButton> _categoryButtons;
+
+    [Header("Category UI")]
+    [SerializeField] private Transform _categoryButtonsContainer; // Parent for buttons
+    [SerializeField] private CategoryButton _categoryButtonPrefab;
 
     [Header("Mode Switching")]
     [SerializeField] private Button _storeTabButton;
@@ -22,27 +25,78 @@ public class ShopManager : MonoBehaviour
     [SerializeField] private GameObject _cartPanel;
 
     private string _currentCategorySlug;
+    private List<CategoryButton> _spawnedCategoryButtons = new List<CategoryButton>();
 
     private void Start()
     {
-        foreach (var btn in _categoryButtons)
-        {
-            btn.Setup(this);
-        }
-
         _storeTabButton.onClick.AddListener(() => SwitchMode(ShopMode.Store));
         _inventoryTabButton.onClick.AddListener(() => SwitchMode(ShopMode.Inventory));
 
-        _currentCategorySlug = _defaultCategory;
-        SwitchMode(ShopMode.Store);
+        // 1. Fetch Categories first
+        FetchCategories();
+    }
+
+    private void FetchCategories()
+    {
+        SetLoading(true);
+        ApiClient.Get().GetAllCategories(OnCategoriesReceived, OnError);
+    }
+
+    private void OnCategoriesReceived(ApiClient.ApiResponse<ApiClient.CategoryResult> response)
+    {
+        if (response.isSuccess && response.result != null)
+        {
+            SpawnCategoryButtons(response.result.data);
+
+            // After spawning buttons, select the default or first one
+            string initialCategory = !string.IsNullOrEmpty(_currentCategorySlug) ? _currentCategorySlug : _defaultCategory;
+            SwitchMode(ShopMode.Store); // This will trigger FetchData
+        }
+        else
+        {
+            OnError("Failed to load categories");
+        }
+    }
+
+    private void SpawnCategoryButtons(List<ApiClient.CategoryItem> rootCategories)
+    {
+        // Clear existing
+        foreach (Transform child in _categoryButtonsContainer) Destroy(child.gameObject);
+        _spawnedCategoryButtons.Clear();
+
+        foreach (var rootCat in rootCategories)
+        {
+            // Option A: Create button for Root Category itself
+            CreateButton(rootCat.name, rootCat.slug);
+
+            // Option B: Create buttons for Sub-Categories (Flattened list)
+            if (rootCat.categories != null)
+            {
+                foreach (var subCat in rootCat.categories)
+                {
+                    // You might want to indent sub-categories visually or just list them
+                    CreateButton(subCat.name, subCat.slug);
+                }
+            }
+        }
+    }
+
+    private void CreateButton(string name, string slug)
+    {
+        var btn = Instantiate(_categoryButtonPrefab, _categoryButtonsContainer);
+        btn.Initialize(name, slug, this);
+        _spawnedCategoryButtons.Add(btn);
     }
 
     public void SelectCategory(string slug)
     {
         _currentCategorySlug = slug;
 
-        foreach (var btn in _categoryButtons)
+        // Update visual state of buttons
+        foreach (var btn in _spawnedCategoryButtons)
+        {
             btn.SetState(btn.Slug == slug);
+        }
 
         FetchData();
     }
@@ -56,7 +110,10 @@ public class ShopManager : MonoBehaviour
 
         if (_cartPanel) _cartPanel.SetActive(mode == ShopMode.Store);
 
-        SelectCategory(_currentCategorySlug);
+        if (!string.IsNullOrEmpty(_currentCategorySlug))
+        {
+            SelectCategory(_currentCategorySlug);
+        }
     }
 
     private void FetchData()
@@ -64,23 +121,26 @@ public class ShopManager : MonoBehaviour
         SetLoading(true);
         ClearGrid();
 
+        if (string.IsNullOrEmpty(_currentCategorySlug)) return;
+
+        Debug.Log($"Fetching data for Mode: {_currentMode}, Category: {_currentCategorySlug}");
+
         if (_currentMode == ShopMode.Store)
         {
-            // حالت فروشگاه: خروجی ShopResult است
             ApiClient.Get().GetProductsByCategory(_currentCategorySlug,
                 OnStoreDataReceived,
                 OnError);
         }
         else
         {
-            // حالت اینونتوری: خروجی List<ShopProduct> است
             ApiClient.Get().GetPurchasedProducts(_currentCategorySlug,
                 OnInventoryDataReceived,
                 OnError);
         }
     }
 
-    // کال‌بک مخصوص فروشگاه
+    // ... (Rest of your callbacks: OnStoreDataReceived, OnInventoryDataReceived, etc.) ...
+
     private void OnStoreDataReceived(ApiClient.ApiResponse<ApiClient.ShopResult> response)
     {
         SetLoading(false);
@@ -88,27 +148,22 @@ public class ShopManager : MonoBehaviour
         {
             CreateProductItems(response.result.data);
         }
-        else
-        {
-            Debug.Log("No items found in Store.");
-        }
     }
 
-    // کال‌بک مخصوص اینونتوری
-    private void OnInventoryDataReceived(ApiClient.ApiResponse<List<ApiClient.ShopProduct>> response)
+    private void OnInventoryDataReceived(ApiClient.ApiResponse<List<ApiClient.InventoryItemWrapper>> response)
     {
         SetLoading(false);
         if (response.isSuccess && response.result != null)
         {
-            CreateProductItems(response.result);
-        }
-        else
-        {
-            Debug.Log("No items found in Inventory.");
+            List<ApiClient.ShopProduct> extractedProducts = new List<ApiClient.ShopProduct>();
+            foreach (var item in response.result)
+            {
+                if (item.product != null) extractedProducts.Add(item.product);
+            }
+            CreateProductItems(extractedProducts);
         }
     }
 
-    // متد مشترک برای ساخت آیتم‌ها
     private void CreateProductItems(List<ApiClient.ShopProduct> products)
     {
         foreach (var product in products)
@@ -121,8 +176,7 @@ public class ShopManager : MonoBehaviour
     private void OnError(string error)
     {
         SetLoading(false);
-        Debug.LogError($"Error fetching {_currentMode} data: {error}");
-        NotificationController.Get().Show("خطا در دریافت اطلاعات");
+        Debug.LogError($"API Error: {error}");
     }
 
     private void ClearGrid()

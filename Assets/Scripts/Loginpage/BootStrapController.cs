@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using Best.HTTP;
+using Best.HTTP.Shared;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,7 +17,7 @@ public class BootStrapController : MonoBehaviour
 
     [SerializeField] private Button _LoginButton;
     [SerializeField] private Button _RegisterButton;
-    [SerializeField] private GameObject _buttonRoot;
+    //[SerializeField] private GameObject _buttonRoot;
     [SerializeField] private TextMeshProUGUI _userNameHome;
     [SerializeField] private Image _avatarHome;
 
@@ -38,31 +40,21 @@ public class BootStrapController : MonoBehaviour
         _RegisterButton.onClick.RemoveAllListeners();
         _RegisterButton.onClick.AddListener(_registerpage.Register);
 
-        //if (_openWalletButton != null && _walletManager != null)
-        //{
-        //    _openWalletButton.onClick.RemoveAllListeners();
-
-        //    _openWalletButton.onClick.AddListener(OpenWalletPage);
-        //}
-
         LoadingHandler.Get().SetVisible(true);
         Getverion();
         ApiClient.Get().OnWalletsUpdated += OnWalletsReceivedForHome;
+        HTTPManager.RootSaveFolderProvider = () =>
+        System.IO.Path.Combine(Application.persistentDataPath, "BestHTTP_Cache");
     }
 
     public void OpenWalletPage()
     {
-        //if (_walletManager != null)
-        //{
-        //    _walletManager.gameObject.SetActive(true);
-        //    _walletManager.Show();
-        //}
+
     }
 
     private void Login()
     {
         _userNameHome.text = PlayerPrefs.GetString("username");
-      
     }
 
     private void Register(string obj)
@@ -80,9 +72,10 @@ public class BootStrapController : MonoBehaviour
     {
         NotificationController.Get().Show(obj);
         LoadingHandler.Get().SetVisible(false);
-        _buttonRoot.SetActive(false);
+       // _buttonRoot.SetActive(false);
         _noInternetpage.Show();
     }
+
     private void OnWalletsReceivedForHome(List<ApiClient.Wallet> wallets)
     {
         if (wallets == null) return;
@@ -104,7 +97,6 @@ public class BootStrapController : MonoBehaviour
             }
             else
             {
-
                 var newItem = Instantiate(_openWalletButton, WalletParent);
 
                 newItem.name = slug;
@@ -125,17 +117,17 @@ public class BootStrapController : MonoBehaviour
             }
         }
 
-
         for (int i = WalletParent.childCount - 1; i >= 0; i--)
         {
             Transform child = WalletParent.GetChild(i);
-            
+
             if (!activeSlugs.Contains(child.name) && child.gameObject != _openWalletButton.gameObject)
             {
                 Destroy(child.gameObject);
             }
         }
     }
+
     private void onGetVersionSuccess(ApiClient.ApiResponse<ApiClient.Result> response)
     {
         LoadingHandler.Get().SetVisible(false);
@@ -145,7 +137,7 @@ public class BootStrapController : MonoBehaviour
 
             if (ForceUpdateData.ForceUpdate)
             {
-                _buttonRoot.SetActive(false);
+               // _buttonRoot.SetActive(false);
                 _updatepage.Show();
                 _updatepage.ShowForceUpdate(ForceUpdateData.GetCurrentVersion,
                     ForceUpdateData.GetServerVersion(), response.result.VERSION_INFO.latest.description,
@@ -154,7 +146,7 @@ public class BootStrapController : MonoBehaviour
             }
             else if (ForceUpdateData.CanUpdate)
             {
-                _buttonRoot.SetActive(false);
+              //  _buttonRoot.SetActive(false);
                 _updatepage.Show();
                 _updatepage.ShowUpdate(ForceUpdateData.GetCurrentVersion,
                     ForceUpdateData.GetServerVersion(),
@@ -173,37 +165,87 @@ public class BootStrapController : MonoBehaviour
     {
         if (AutoLogin && PlayerPrefs.HasKey("token"))
         {
-            Home.gameObject.SetActive(true);
-            _userNameHome.text = PlayerPrefs.GetString("username");
-
-            ApiClient.Get().GetProfileInfo((response) =>
-            {
-                if (response.result != null)
+            ApiClient.Get().GetProfileInfo(
+                (response) =>
                 {
-                    if (response.result.profile != null)
-                    {
-                        int id = response.result.profile.avatar_id;
-                        if (AvatarsConfig.Instance != null && id >= 0 && id < AvatarsConfig.Instance.Avatars.Count)
-                        {
-                            _avatarHome.sprite = AvatarsConfig.Instance.Avatars[id].sprite;
-                        }
-                    }
-                    _userNameHome.text = response.result.GetUsername();
+                    ProceedToHome(response.result);
+                },
+                (fail) =>
+                {
+                    AttemptRefreshToken();
                 }
-            }, (fail) => { });
-
-
-            ApiClient.Get().RequestWalletsUpdate();
+            );
         }
         else
         {
-            _loginpage.Show();
-            _buttonRoot.SetActive(true);
+            ShowLoginScreen();
         }
     }
+
+    private void AttemptRefreshToken()
+    {
+        ApiClient.Get().RefreshToken(
+            (response) =>
+            {
+                if (response.isSuccess && response.result != null)
+                {
+                    ProceedToHome(response.result.user);
+                }
+                else
+                {
+                    HandleLoginFailure();
+                }
+            },
+            (error) =>
+            {
+                HandleLoginFailure();
+            }
+        );
+    }
+
+    private void HandleLoginFailure()
+    {
+        PlayerPrefs.DeleteKey("token");
+        PlayerPrefs.Save();
+        ShowLoginScreen();
+    }
+
+    private void ShowLoginScreen()
+    {
+        Home.gameObject.SetActive(false);
+        _loginpage.Show();
+        //_buttonRoot.SetActive(true);
+    }
+
+    private void ProceedToHome(ApiClient.User user)
+    {
+        _loginpage.Hide();
+        //_buttonRoot.SetActive(false);
+        Home.gameObject.SetActive(true);
+
+        if (user != null)
+        {
+            _userNameHome.text = user.GetUsername();
+
+            if (user.profile != null)
+            {
+                int id = user.profile.avatar_id;
+                if (AvatarsConfig.Instance != null && id >= 0 && id < AvatarsConfig.Instance.Avatars.Count)
+                {
+                    _avatarHome.sprite = AvatarsConfig.Instance.Avatars[id].sprite;
+                }
+            }
+        }
+        else
+        {
+            _userNameHome.text = PlayerPrefs.GetString("username");
+        }
+
+        ApiClient.Get().RequestWalletsUpdate();
+    }
+
     private void OnDestroy()
     {
-      
         ApiClient.Get().OnWalletsUpdated -= OnWalletsReceivedForHome;
     }
 }

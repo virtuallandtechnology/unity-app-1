@@ -24,7 +24,7 @@ public partial class ApiClient
         return _userdata;
     }
 
-    [System.Serializable]
+    [Serializable]
     public class ApiResponse<T>
     {
         public bool isSuccess;
@@ -33,6 +33,7 @@ public partial class ApiClient
         public int code;
         public object errors;
     }
+
     [Serializable]
     public class ShopResponse
     {
@@ -53,17 +54,17 @@ public partial class ApiClient
         public int id;
         public string title;
         public string description;
-        public string image; // URL
+        public string image;
         public List<ProductPrice> price;
         public int in_stock;
-     
+        public bool is_purchased;
     }
 
     [Serializable]
     public class ProductPrice
     {
         public double price;
-        public string payable; 
+        public string payable;
     }
 
     [Serializable]
@@ -73,6 +74,14 @@ public partial class ApiClient
         public string payable_slug;
         public Dictionary<string, string> metadata;
     }
+
+    [Serializable]
+    public class InventoryItemWrapper
+    {
+        public ShopProduct product;
+        public string created_at;
+    }
+
     public void GetShopProducts(int page, Action<ApiResponse<ShopResult>> onSuccess, Action<string> onFail)
     {
         string token = PlayerPrefs.GetString("token");
@@ -84,10 +93,10 @@ public partial class ApiClient
         request.AddHeader("Authorization", $"Bearer {token}");
         request.Send();
     }
+
     public void GetProductsByCategory(string categorySlug, Action<ApiResponse<ShopResult>> onSuccess, Action<string> onFail)
     {
         string token = PlayerPrefs.GetString("token");
-        // مثال: /user/products/Cars
         string url = $"{GameConfig.Instance.BaseURL}/user/products/{categorySlug}";
 
         var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
@@ -97,17 +106,18 @@ public partial class ApiClient
         request.Send();
     }
 
-    public void GetPurchasedProducts(string categorySlug, Action<ApiResponse<List<ShopProduct>>> onSuccess, Action<string> onFail)
+    public void GetPurchasedProducts(string categorySlug, Action<ApiResponse<List<InventoryItemWrapper>>> onSuccess, Action<string> onFail)
     {
         string token = PlayerPrefs.GetString("token");
         string url = $"{GameConfig.Instance.BaseURL}/user/profile/products/{categorySlug}";
 
         var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
-            (req, resp) => HandleResponse<List<ShopProduct>>(req, resp, onSuccess, onFail));
+            (req, resp) => HandleResponse<List<InventoryItemWrapper>>(req, resp, onSuccess, onFail));
 
         request.AddHeader("Authorization", $"Bearer {token}");
         request.Send();
     }
+
     public void BuyProduct(int productId, string payableSlug, Action<ApiResponse<object>> onSuccess, Action<string> onFail)
     {
         string token = PlayerPrefs.GetString("token");
@@ -147,10 +157,12 @@ public partial class ApiClient
         public double balance;
         public WalletType wallet_type;
     }
+
     public event Action<List<Wallet>> OnWalletsUpdated;
 
     private List<Wallet> _cachedWallets;
     public List<Wallet> CachedWallets => _cachedWallets;
+
     public void GetWallets(Action<ApiResponse<List<Wallet>>> onSuccess, Action<string> onFail)
     {
         string token = PlayerPrefs.GetString("token");
@@ -169,12 +181,13 @@ public partial class ApiClient
         request.AddHeader("Accept", "application/json");
         request.Send();
     }
+
     [Serializable]
     public class PaymentStartRequest
     {
         public string amount;
-        public string base_token;      // مثلا "USDT"
-        public string available_tokens; // مثلا "BTC,USDT"
+        public string base_token;
+        public string available_tokens;
     }
 
     [Serializable]
@@ -196,7 +209,6 @@ public partial class ApiClient
         public string national_code;
     }
 
-
     public void StartEasyBitPayment(string amount, string baseToken, Action<ApiResponse<PaymentStartResult>> onSuccess, Action<string> onFail)
     {
         string token = PlayerPrefs.GetString("token");
@@ -206,7 +218,7 @@ public partial class ApiClient
         {
             amount = amount,
             base_token = baseToken,
-            available_tokens = "BTC,USDT" 
+            available_tokens = "BTC,USDT"
         };
 
         var request = new HTTPRequest(new Uri(url), HTTPMethods.Post,
@@ -221,7 +233,6 @@ public partial class ApiClient
         request.Send();
     }
 
-
     public void VerifyEasyBitPayment(PaymentVerificationRequest data, Action<ApiResponse<object>> onSuccess, Action<string> onFail)
     {
         string token = PlayerPrefs.GetString("token");
@@ -233,12 +244,12 @@ public partial class ApiClient
         request.AddHeader("Authorization", $"Bearer {token}");
         request.AddHeader("Content-Type", "application/json");
 
-
         byte[] body = System.Text.Encoding.UTF8.GetBytes(JsonUtility.ToJson(data));
         request.UploadSettings.UploadStream = new System.IO.MemoryStream(body);
 
         request.Send();
     }
+
     public void RequestWalletsUpdate()
     {
         GetWallets(
@@ -247,8 +258,6 @@ public partial class ApiClient
                 if (response.isSuccess && response.result != null)
                 {
                     _cachedWallets = response.result;
-
-                
                     OnWalletsUpdated?.Invoke(response.result);
                 }
             },
@@ -258,52 +267,28 @@ public partial class ApiClient
             }
         );
     }
+
     private void HandleResponse<T>(HTTPRequest request, HTTPResponse response,
-        Action<ApiResponse<T>> onSuccess, Action<string> onFail) where T : class
+        Action<ApiResponse<T>> onSuccess, Action<string> onFail)
     {
-        switch (request.State)
+        if (request.State == HTTPRequestStates.Finished && response.IsSuccess)
         {
-            case HTTPRequestStates.Finished:
-                Debug.Log(response.DataAsText);
-                {
-                    var apiResponse = JsonConvert.DeserializeObject<ApiResponse<T>>(response.DataAsText);
-
-                    if (apiResponse == null)
-                    {
-                        Debug.LogError("❌ Could not parse server response.");
-                        onFail?.Invoke("Invalid server response.");
-                        return;
-                    }
-
-                    if (apiResponse.isSuccess)
-                    {
-                        Debug.Log("✅ Success: " + request.Uri + "  " + apiResponse.message);
-                        onSuccess?.Invoke(apiResponse);
-                    }
-                    else
-                    {
-                        string detailedError = apiResponse.message;
-                        Debug.LogWarning("⚠️ Server returned failure: " + detailedError);
-                        onFail?.Invoke(detailedError);
-                    }
-                }
-                break;
-
-            case HTTPRequestStates.Error:
-                Debug.LogError($"❌ Network error: {request.Exception?.Message}");
-                onFail?.Invoke($"Network error: {request.Exception?.Message}");
-                break;
-
-            case HTTPRequestStates.Aborted:
-                Debug.LogError($"❌ Request was aborted");
-                onFail?.Invoke("Request was aborted");
-                break;
-
-            case HTTPRequestStates.ConnectionTimedOut:
-            case HTTPRequestStates.TimedOut:
-                Debug.LogError("❌ Request timed out");
-                onFail?.Invoke("Request timed out");
-                break;
+            try
+            {
+                var apiResponse = JsonConvert.DeserializeObject<ApiResponse<T>>(response.DataAsText);
+                if (apiResponse.isSuccess)
+                    onSuccess?.Invoke(apiResponse);
+                else
+                    onFail?.Invoke(apiResponse.message);
+            }
+            catch (Exception ex)
+            {
+                onFail?.Invoke("Parse Error: " + ex.Message);
+            }
+        }
+        else
+        {
+            onFail?.Invoke("Network Error or Request Failed");
         }
     }
 
@@ -319,9 +304,7 @@ public partial class ApiClient
         Action<ApiResponse<UserData>> onSuccess, Action<string> onFail)
     {
         string url = GameConfig.Instance.BaseURL + "/auth/register";
-        Debug.Log("url=" + url);
         var t = new Passwordclass() { name = username, password = password, email = email };
-        Debug.Log("data=" + JsonUtility.ToJson(t));
 
         var request = new HTTPRequest(new System.Uri(url), HTTPMethods.Post,
             (req, resp) => HandleResponse<UserData>(req, resp, onSuccess, onFail));
@@ -337,7 +320,6 @@ public partial class ApiClient
       Action<ApiResponse<User>> onSuccess, Action<string> onFail)
     {
         string url = GameConfig.Instance.BaseURL + "/user/profile/info";
-        Debug.Log("url=" + url);
 
         var request = new HTTPRequest(new System.Uri(url), HTTPMethods.Get,
             (req, resp) => HandleResponse<User>(req, resp, (ApiResponse<User> t) =>
@@ -374,7 +356,6 @@ public partial class ApiClient
     public void GetServerConfig(Action<ApiResponse<Result>> onSuccess, Action<string> onFail)
     {
         string url = "https://soccer.ecogamecenter.net/api/configs/indexed";
-        Debug.Log("url=" + url);
 
         var request = new HTTPRequest(new System.Uri(url), HTTPMethods.Get,
             (req, resp) => HandleResponse<Result>(req, resp, onSuccess, onFail));
@@ -386,12 +367,8 @@ public partial class ApiClient
     internal void UpdateProfile(Profile profile, Action<ApiResponse<User>> onsuccess, Action<string> onFail)
     {
         string token = PlayerPrefs.GetString("token");
-
         string url = GameConfig.Instance.BaseURL + "/user/profile/update";
-        Debug.Log("url=" + url);
-
         string prof = JsonConvert.SerializeObject(profile);
-        Debug.Log("data=" + prof);
 
         var request = new HTTPRequest(new System.Uri(url), HTTPMethods.Post,
             (req, resp) => HandleResponse<User>(req, resp, (ApiResponse<User> t) =>
@@ -420,7 +397,6 @@ public partial class ApiClient
         }
 
         string url = GameConfig.Instance.BaseURL + "/user/profile/info";
-        Debug.Log("[API] GetProfileInfo URL: " + url);
 
         var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
             (req, resp) => HandleResponse<User>(req, resp, (ApiResponse<User> response) =>
@@ -468,6 +444,79 @@ public partial class ApiClient
         request.Send();
     }
 
+    public void RefreshToken(Action<ApiResponse<UserData>> onSuccess, Action<string> onFail)
+    {
+        string url = GameConfig.Instance.BaseURL + "/auth/refresh";
+        string token = PlayerPrefs.GetString("token");
+
+        if (string.IsNullOrEmpty(token))
+        {
+            onFail?.Invoke("No token found locally.");
+            return;
+        }
+
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Post,
+            (req, resp) => HandleResponse<UserData>(req, resp, (response) =>
+            {
+                if (response.isSuccess && response.result != null)
+                {
+                    PlayerPrefs.SetString("token", response.result.token);
+
+                    if (response.result.user != null)
+                    {
+                        Setplayer(response.result.user);
+                        PlayerPrefs.SetString("username", response.result.user.GetUsername());
+                    }
+
+                    PlayerPrefs.Save();
+                }
+
+                onSuccess?.Invoke(response);
+            }, onFail));
+
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.AddHeader("Accept", "application/json");
+
+        request.Send();
+    }
+    [Serializable]
+    public class CategoryResponse
+    {
+        public CategoryResult result;
+    }
+
+    [Serializable]
+    public class CategoryResult
+    {
+        public int current_page;
+        public int last_page;
+        public List<CategoryItem> data;
+    }
+
+    [Serializable]
+    public class CategoryItem
+    {
+        public int id;
+        public int? parent_id;
+        public string name;
+        public string slug;
+        public string image;
+        public List<CategoryItem> categories; // Sub-categories
+    }
+
+    public void GetAllCategories(Action<ApiResponse<CategoryResult>> onSuccess, Action<string> onFail)
+    {
+        string token = PlayerPrefs.GetString("token");
+       
+        string url = $"{GameConfig.Instance.BaseURL}/user/categories?page=1";
+
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
+            (req, resp) => HandleResponse<CategoryResult>(req, resp, onSuccess, onFail));
+
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.Send();
+    }
+
     [Serializable]
     public class loginclass
     {
@@ -475,7 +524,7 @@ public partial class ApiClient
         public string password;
     }
 
-    [System.Serializable]
+    [Serializable]
     public class UserData
     {
         public string token { get; set; }
@@ -488,11 +537,10 @@ public partial class ApiClient
     public static User GetPlayer() => _player;
     private void Setplayer(User userdata)
     {
-        Debug.Log("--player data Updated");
         _player = userdata;
     }
 
-    [System.Serializable]
+    [Serializable]
     public class User
     {
         public int id { get; set; }
@@ -531,7 +579,7 @@ public partial class ApiClient
         }
     }
 
-    [System.Serializable]
+    [Serializable]
     public class Profile
     {
         public int avatar_id { get; set; }

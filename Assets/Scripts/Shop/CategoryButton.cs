@@ -4,21 +4,29 @@ using TMPro;
 
 public class CategoryButton : MonoBehaviour
 {
-    [SerializeField] private string _categorySlug; 
+    [SerializeField] private TextMeshProUGUI _nameText;
     [SerializeField] private Button _button;
-    [SerializeField] private Image _selectionHighlight; 
+    [SerializeField] private Image _selectionHighlight;
 
+    private string _categorySlug;
     private ShopManager _manager;
 
-    public void Setup(ShopManager manager)
+    // Call this when spawning the button
+    public void Initialize(string name, string slug, ShopManager manager)
     {
+        _categorySlug = slug;
         _manager = manager;
+
+        if (_nameText) _nameText.text = name;
+
+        _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(OnClick);
     }
 
     private void OnClick()
     {
-        _manager.SelectCategory(_categorySlug);
+        if (_manager != null)
+            _manager.SelectCategory(_categorySlug);
     }
 
     public void SetState(bool isSelected)

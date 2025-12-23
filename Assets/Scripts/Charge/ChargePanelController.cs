@@ -66,7 +66,7 @@ public class ChargePanelController : MonoBehaviour
         string amount = _amountInput.text;
         if (string.IsNullOrEmpty(amount))
         {
-            NotificationController.Get().Show("لطفا مبلغ را وارد کنید");
+            NotificationController.Get().Show("Please enter the amount.");
             return;
         }
 
@@ -84,7 +84,7 @@ public class ChargePanelController : MonoBehaviour
             },
             (error) => {
                 SetLoading(false);
-                NotificationController.Get().Show("خطا در ایجاد درگاه: " + error);
+                NotificationController.Get().Show("Error creating pay link: " + error);
             }
         );
     }
@@ -96,7 +96,7 @@ public class ChargePanelController : MonoBehaviour
 
         if (string.IsNullOrEmpty(phone))
         {
-            NotificationController.Get().Show("لطفا شماره موبایل را وارد کنید");
+            NotificationController.Get().Show("Please enter your mobile number.");
             return;
         }
 
@@ -116,7 +116,7 @@ public class ChargePanelController : MonoBehaviour
                 SetLoading(false);
                 if (response.isSuccess)
                 {
-                  //  NotificationController.Get().Show("پرداخت با موفقیت انجام شد!");
+                   NotificationController.Get().Show("Payment was successful!");
                     Hide();
                     var walletManager = FindFirstObjectByType<WalletManager>();
                     if (walletManager != null)
@@ -126,12 +126,12 @@ public class ChargePanelController : MonoBehaviour
                 }
                 else
                 {
-                   // NotificationController.Get().Show("پرداخت تایید نشد یا انجام نشده است.");
+                    NotificationController.Get().Show("The payment was not confirmed or made.");
                 }
             },
             (error) => {
                 SetLoading(false);
-              //  NotificationController.Get().Show("خطا در بررسی وضعیت: " + error);
+                NotificationController.Get().Show("Error checking status: " + error);
             }
         );
     }
