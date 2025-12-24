@@ -18,6 +18,7 @@ namespace VirtualLand
         {
             base.Show();
             _loginusername.text = PlayerPrefs.HasKey("username") ? PlayerPrefs.GetString("username") : "";
+           
         }
 
         public void Login()
@@ -44,6 +45,7 @@ namespace VirtualLand
         private void OnSuccess(ApiResponse<UserData> response)
         {
             print(response + "RRRRRRRRR");
+
             LoadingHandler.Get().SetVisible(false);
             Debug.Log(response.result);
             PlayerPrefs.SetString("username", response.result.user.profile.nickname);
@@ -51,6 +53,7 @@ namespace VirtualLand
             PlayerPrefs.SetString("token", token);
             LoginAction.Invoke();
             LoginePopup.SetActive(false);
+            ApiClient.Get().RequestWalletsUpdate();
         }
     }
 }

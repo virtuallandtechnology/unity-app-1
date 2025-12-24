@@ -9,7 +9,7 @@ public class NotificationController : MonoBehaviour
     private static NotificationController instance;
     [SerializeField] private GameObject NotiicationRoot;
     [SerializeField] private Text _titleText;
-    [SerializeField] private Text _descriptionText;
+    [SerializeField] private TextMeshProUGUI _descriptionText;
     [SerializeField] private Button _okButton;
     [SerializeField] private Button _cancelButton;
     [SerializeField] private TMP_Text _TimerPaneldescriptionText;
