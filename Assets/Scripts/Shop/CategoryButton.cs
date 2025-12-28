@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System;
 
 public class CategoryButton : MonoBehaviour
 {
@@ -10,8 +11,8 @@ public class CategoryButton : MonoBehaviour
 
     private string _categorySlug;
     private ShopManager _manager;
+    private Action _customClickAction;
 
-    // Call this when spawning the button
     public void Initialize(string name, string slug, ShopManager manager)
     {
         _categorySlug = slug;
@@ -23,10 +24,21 @@ public class CategoryButton : MonoBehaviour
         _button.onClick.AddListener(OnClick);
     }
 
+    public void SetClickAction(Action customAction)
+    {
+        _customClickAction = customAction;
+    }
+
     private void OnClick()
     {
-        if (_manager != null)
+        if (_customClickAction != null)
+        {
+            _customClickAction.Invoke();
+        }
+        else if (_manager != null)
+        {
             _manager.SelectCategory(_categorySlug);
+        }
     }
 
     public void SetState(bool isSelected)

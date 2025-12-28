@@ -5,10 +5,10 @@ using UnityEngine.UI;
 public class ShopManager : MonoBehaviour
 {
     public enum ShopMode { Store, Inventory }
+    public enum ViewLevel { MainCategories, SubCategories, Products }
 
     [Header("Configuration")]
     [SerializeField] private ShopMode _currentMode = ShopMode.Store;
-    [SerializeField] private string _defaultCategory = "CARS"; // Use slug
 
     [Header("UI References")]
     [SerializeField] private Transform _itemsContainer;
@@ -16,23 +16,32 @@ public class ShopManager : MonoBehaviour
     [SerializeField] private GameObject _loadingSpinner;
 
     [Header("Category UI")]
-    [SerializeField] private Transform _categoryButtonsContainer; // Parent for buttons
+    [SerializeField] private Transform _categoryButtonsContainer;
     [SerializeField] private CategoryButton _categoryButtonPrefab;
+    [SerializeField] private Button _backButton;
 
     [Header("Mode Switching")]
     [SerializeField] private Button _storeTabButton;
     [SerializeField] private Button _inventoryTabButton;
     [SerializeField] private GameObject _cartPanel;
 
-    private string _currentCategorySlug;
+    private ViewLevel _currentViewLevel = ViewLevel.MainCategories;
+    private List<ApiClient.CategoryItem> _allCategories;
+    private ApiClient.CategoryItem _currentMainCategory;
+    private string _currentSubCategorySlug;
     private List<CategoryButton> _spawnedCategoryButtons = new List<CategoryButton>();
 
     private void Start()
     {
         _storeTabButton.onClick.AddListener(() => SwitchMode(ShopMode.Store));
         _inventoryTabButton.onClick.AddListener(() => SwitchMode(ShopMode.Inventory));
+        
+        if (_backButton != null)
+        {
+            _backButton.onClick.AddListener(OnBackButtonClicked);
+            _backButton.gameObject.SetActive(false);
+        }
 
-        // 1. Fetch Categories first
         FetchCategories();
     }
 
@@ -46,59 +55,123 @@ public class ShopManager : MonoBehaviour
     {
         if (response.isSuccess && response.result != null)
         {
-            SpawnCategoryButtons(response.result.data);
-
-            // After spawning buttons, select the default or first one
-            string initialCategory = !string.IsNullOrEmpty(_currentCategorySlug) ? _currentCategorySlug : _defaultCategory;
-            SwitchMode(ShopMode.Store); // This will trigger FetchData
+            _allCategories = response.result.data;
+            ShowMainCategories();
+            SwitchMode(ShopMode.Store);
         }
         else
         {
             OnError("Failed to load categories");
         }
+        SetLoading(false);
     }
 
-    private void SpawnCategoryButtons(List<ApiClient.CategoryItem> rootCategories)
+    private void ShowMainCategories()
     {
-        // Clear existing
-        foreach (Transform child in _categoryButtonsContainer) Destroy(child.gameObject);
-        _spawnedCategoryButtons.Clear();
+        _currentViewLevel = ViewLevel.MainCategories;
+        ClearCategoryButtons();
+        ClearGrid();
+        
+        if (_backButton != null)
+            _backButton.gameObject.SetActive(false);
 
-        foreach (var rootCat in rootCategories)
+        if (_allCategories == null) return;
+
+        // Show all top-level categories except ROOT
+        // These are the main categories like Cars, Weapons, Skins, etc.
+        foreach (var category in _allCategories)
         {
-            // Option A: Create button for Root Category itself
-            CreateButton(rootCat.name, rootCat.slug);
-
-            // Option B: Create buttons for Sub-Categories (Flattened list)
-            if (rootCat.categories != null)
+            if (category.slug != "ROOT")
             {
-                foreach (var subCat in rootCat.categories)
-                {
-                    // You might want to indent sub-categories visually or just list them
-                    CreateButton(subCat.name, subCat.slug);
-                }
+                CreateMainCategoryButton(category);
             }
         }
     }
 
-    private void CreateButton(string name, string slug)
+    private void CreateMainCategoryButton(ApiClient.CategoryItem category)
     {
         var btn = Instantiate(_categoryButtonPrefab, _categoryButtonsContainer);
-        btn.Initialize(name, slug, this);
+        btn.Initialize(category.name, category.slug, this);
+        btn.SetClickAction(() => OnMainCategoryClicked(category));
         _spawnedCategoryButtons.Add(btn);
     }
 
-    public void SelectCategory(string slug)
+    private void OnMainCategoryClicked(ApiClient.CategoryItem mainCategory)
     {
-        _currentCategorySlug = slug;
+        _currentMainCategory = mainCategory;
 
-        // Update visual state of buttons
-        foreach (var btn in _spawnedCategoryButtons)
+        if (mainCategory.categories != null && mainCategory.categories.Count > 0)
         {
-            btn.SetState(btn.Slug == slug);
+            ShowSubCategories(mainCategory);
         }
+        else
+        {
+            ShowProducts(mainCategory.slug);
+        }
+    }
 
-        FetchData();
+    private void ShowSubCategories(ApiClient.CategoryItem mainCategory)
+    {
+        _currentViewLevel = ViewLevel.SubCategories;
+        ClearCategoryButtons();
+        ClearGrid();
+        
+        if (_backButton != null)
+            _backButton.gameObject.SetActive(true);
+
+        foreach (var subCat in mainCategory.categories)
+        {
+            CreateSubCategoryButton(subCat);
+        }
+    }
+
+    private void CreateSubCategoryButton(ApiClient.CategoryItem subCategory)
+    {
+        var btn = Instantiate(_categoryButtonPrefab, _categoryButtonsContainer);
+        btn.Initialize(subCategory.name, subCategory.slug, this);
+        btn.SetClickAction(() => OnSubCategoryClicked(subCategory.slug));
+        _spawnedCategoryButtons.Add(btn);
+    }
+
+    private void OnSubCategoryClicked(string subCategorySlug)
+    {
+        _currentSubCategorySlug = subCategorySlug;
+        ShowProducts(subCategorySlug);
+    }
+
+    private void ShowProducts(string categorySlug)
+    {
+        _currentViewLevel = ViewLevel.Products;
+        _currentSubCategorySlug = categorySlug;
+        
+        if (_backButton != null)
+            _backButton.gameObject.SetActive(true);
+
+        FetchData(categorySlug);
+    }
+
+    private void OnBackButtonClicked()
+    {
+        switch (_currentViewLevel)
+        {
+            case ViewLevel.Products:
+                if (_currentMainCategory != null)
+                {
+                    ShowSubCategories(_currentMainCategory);
+                }
+                else
+                {
+                    ShowMainCategories();
+                }
+                break;
+
+            case ViewLevel.SubCategories:
+                ShowMainCategories();
+                break;
+
+            case ViewLevel.MainCategories:
+                break;
+        }
     }
 
     public void SwitchMode(ShopMode mode)
@@ -110,36 +183,34 @@ public class ShopManager : MonoBehaviour
 
         if (_cartPanel) _cartPanel.SetActive(mode == ShopMode.Store);
 
-        if (!string.IsNullOrEmpty(_currentCategorySlug))
+        if (_currentViewLevel == ViewLevel.Products && !string.IsNullOrEmpty(_currentSubCategorySlug))
         {
-            SelectCategory(_currentCategorySlug);
+            FetchData(_currentSubCategorySlug);
         }
     }
 
-    private void FetchData()
+    private void FetchData(string categorySlug)
     {
         SetLoading(true);
         ClearGrid();
 
-        if (string.IsNullOrEmpty(_currentCategorySlug)) return;
+        if (string.IsNullOrEmpty(categorySlug)) return;
 
-        Debug.Log($"Fetching data for Mode: {_currentMode}, Category: {_currentCategorySlug}");
+        Debug.Log($"Fetching data for Mode: {_currentMode}, Category: {categorySlug}");
 
         if (_currentMode == ShopMode.Store)
         {
-            ApiClient.Get().GetProductsByCategory(_currentCategorySlug,
+            ApiClient.Get().GetProductsByCategory(categorySlug,
                 OnStoreDataReceived,
                 OnError);
         }
         else
         {
-            ApiClient.Get().GetPurchasedProducts(_currentCategorySlug,
+            ApiClient.Get().GetPurchasedProducts(categorySlug,
                 OnInventoryDataReceived,
                 OnError);
         }
     }
-
-    // ... (Rest of your callbacks: OnStoreDataReceived, OnInventoryDataReceived, etc.) ...
 
     private void OnStoreDataReceived(ApiClient.ApiResponse<ApiClient.ShopResult> response)
     {
@@ -169,7 +240,7 @@ public class ShopManager : MonoBehaviour
         foreach (var product in products)
         {
             var item = Instantiate(_itemPrefab, _itemsContainer);
-            item.Setup(product, _currentMode == ShopMode.Inventory);
+            item.Setup(product, _currentMode == ShopMode.Inventory, _currentSubCategorySlug);
         }
     }
 
@@ -184,8 +255,22 @@ public class ShopManager : MonoBehaviour
         foreach (Transform child in _itemsContainer) Destroy(child.gameObject);
     }
 
+    private void ClearCategoryButtons()
+    {
+        foreach (Transform child in _categoryButtonsContainer) Destroy(child.gameObject);
+        _spawnedCategoryButtons.Clear();
+    }
+
     private void SetLoading(bool show)
     {
         if (_loadingSpinner) _loadingSpinner.SetActive(show);
+    }
+
+    public void SelectCategory(string slug)
+    {
+        foreach (var btn in _spawnedCategoryButtons)
+        {
+            btn.SetState(btn.Slug == slug);
+        }
     }
 }
