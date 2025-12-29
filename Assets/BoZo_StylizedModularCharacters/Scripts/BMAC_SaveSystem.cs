@@ -186,7 +186,15 @@ namespace Bozo.ModularCharacters
         {
             for (int i = 0; i < loadData.bodyModsKeys.Count; i++)
             {
-                outfitSystem.bodyModifiers[loadData.bodyModsKeys[i]].SetData(loadData.bodyMods[i]);
+                string key = loadData.bodyModsKeys[i];
+                if (outfitSystem.bodyModifiers.ContainsKey(key))
+                {
+                    outfitSystem.bodyModifiers[key].SetData(loadData.bodyMods[i]);
+                }
+                else
+                {
+                    Debug.LogWarning($"Body Modifier '{key}' not found in OutfitSystem. Skipping.");
+                }
             }
         }
 

@@ -20,6 +20,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: BSMC_CharacterMergedBase
       objectReference: {fileID: 0}
+    - target: {fileID: 7630683439406129268, guid: 828d2ce3c8fb74f498e8bb757fa113a6, type: 3}
+      propertyPath: characterData
+      value: 
+      objectReference: {fileID: 11400000, guid: e4b01cb950a32b24588cd96bf92869cb, type: 2}
     - target: {fileID: 7957609120742801846, guid: 828d2ce3c8fb74f498e8bb757fa113a6, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0

@@ -46,9 +46,25 @@ public class ShopItemUI : MonoBehaviour
             _view3DButton.onClick.RemoveAllListeners();
             _view3DButton.onClick.AddListener(() =>
             {
-                if (Shop3DViewController.Instance != null)
+                Debug.Log($"[ShopItemUI] Clicked View 3D for Product: {product.id}, Category: {_categorySlug}");
+                
+                // Use ShopManager to get or create the viewer controller
+                var shopManager = FindObjectOfType<ShopManager>();
+                if (shopManager != null)
                 {
-                    Shop3DViewController.Instance.ShowPreview(product.id, _categorySlug);
+                    var manager = shopManager.Get3DViewController();
+                    if (manager != null)
+                    {
+                        manager.ShowPreview(product, _categorySlug);
+                    }
+                    else
+                    {
+                        Debug.LogError("[ShopItemUI] Failed to get Shop3DViewControllerV2 from ShopManager!");
+                    }
+                }
+                else
+                {
+                    Debug.LogError("[ShopItemUI] ShopManager not found in scene!");
                 }
             });
         }

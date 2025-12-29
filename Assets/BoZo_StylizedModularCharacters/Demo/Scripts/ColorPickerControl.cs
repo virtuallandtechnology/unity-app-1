@@ -474,8 +474,15 @@ namespace Bozo.ModularCharacters
         public void SetCopyIndex(int value)
         {
             copyIndex = value;
-            CopyCatagoryText.text = outfitTypes[copyIndex];
-            outfitPickerSettings[outfitType].copyIndex = copyIndex;
+            if (outfitTypes != null && copyIndex >= 0 && copyIndex < outfitTypes.Count)
+            {
+                CopyCatagoryText.text = outfitTypes[copyIndex];
+            }
+            
+            if (outfitPickerSettings.ContainsKey(outfitType)) 
+            {
+                outfitPickerSettings[outfitType].copyIndex = copyIndex;
+            }
         }
 
         public void CopyColor(OutfitBase copyOutfit)

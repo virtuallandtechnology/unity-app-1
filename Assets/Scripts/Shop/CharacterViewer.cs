@@ -28,6 +28,7 @@ namespace Game.Shop.Visuals
         public void Initialize(ApiClient.ShopProduct productData)
         {
             _currentProduct = productData;
+            this.gameObject.SetActive(true); // Ensure the viewer itself is active
             _viewerRoot.SetActive(true);
         }
 
@@ -61,7 +62,7 @@ namespace Game.Shop.Visuals
 
             // Get character data from the outfit system
             CharacterData data = BMAC_SaveSystem.GetCharacterData(_currentCharacter);
-            data.characterName = _currentProduct.name;
+            data.characterName = _currentProduct.title;
 
             // Convert to JSON
             string json = JsonUtility.ToJson(data);
@@ -122,10 +123,15 @@ namespace Game.Shop.Visuals
 
         public bool CanHandle(string categorySlug)
         {
+            // Detailed Debug
+            // Debug.Log($"[CharacterViewer] Checking '{categorySlug}' against supported list...");
+            
             foreach (var category in _supportedCategories)
             {
-                if (category.Equals(categorySlug, System.StringComparison.OrdinalIgnoreCase))
+                // Debug.Log($"   - Comparing with '{category}'");
+                if (category.Trim().Equals(categorySlug.Trim(), System.StringComparison.OrdinalIgnoreCase))
                 {
+                    // Debug.Log($"   -> MATCH FOUND!");
                     return true;
                 }
             }
