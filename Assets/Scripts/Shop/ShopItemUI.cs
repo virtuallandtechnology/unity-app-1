@@ -116,8 +116,6 @@ public class ShopItemUI : MonoBehaviour
         }
     }
 
-    // ... (بقیه متدها مثل LoadOrDownloadImage بدون تغییر باقی می‌مانند) ...
-    // برای رعایت اختصار متدهای قبلی تکرار نشدند اما باید در کلاس باشند
 
     private void LoadOrDownloadImage(string url)
     {

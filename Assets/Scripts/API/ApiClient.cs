@@ -118,6 +118,18 @@ public partial class ApiClient
         request.Send();
     }
 
+    public void GetProductById(int productId, Action<ApiResponse<ShopProduct>> onSuccess, Action<string> onFail)
+    {
+        string token = PlayerPrefs.GetString("token");
+        string url = $"{GameConfig.Instance.BaseURL}/user/products/details/{productId}";
+
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
+            (req, resp) => HandleResponse<ShopProduct>(req, resp, onSuccess, onFail));
+
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.Send();
+    }
+
     public void BuyProduct(int productId, string payableSlug, Action<ApiResponse<object>> onSuccess, Action<string> onFail)
     {
         string token = PlayerPrefs.GetString("token");
