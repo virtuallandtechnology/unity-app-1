@@ -46,25 +46,27 @@ public class ShopItemUI : MonoBehaviour
             _view3DButton.onClick.RemoveAllListeners();
             _view3DButton.onClick.AddListener(() =>
             {
-                Debug.Log($"[ShopItemUI] Clicked View 3D for Product: {product.id}, Category: {_categorySlug}");
+                Debug.Log($"[ShopItemUI] Opening preview for: {_categorySlug} (ID: {product.id})");
                 
-                // Use ShopManager to get or create the viewer controller
-                var shopManager = FindObjectOfType<ShopManager>();
-                if (shopManager != null)
+                // استفاده از سیستم جدید ProductPreviewLoader
+                var loader = Game.Shop.Preview.ProductPreviewLoader.Instance;
+                if (loader != null)
                 {
-                    var manager = shopManager.Get3DViewController();
-                    if (manager != null)
+                    loader.LoadPreviewByProduct(product, _categorySlug, (success) =>
                     {
-                        manager.ShowPreview(product, _categorySlug);
-                    }
-                    else
-                    {
-                        Debug.LogError("[ShopItemUI] Failed to get Shop3DViewControllerV2 from ShopManager!");
-                    }
+                        if (success)
+                        {
+                            Debug.Log("[ShopItemUI] Preview loaded successfully");
+                        }
+                        else
+                        {
+                            Debug.LogError($"[ShopItemUI] Failed to load preview for product {product.id}");
+                        }
+                    });
                 }
                 else
                 {
-                    Debug.LogError("[ShopItemUI] ShopManager not found in scene!");
+                    Debug.LogError("[ShopItemUI] ProductPreviewLoader not found in scene!");
                 }
             });
         }

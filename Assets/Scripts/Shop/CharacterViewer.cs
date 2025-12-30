@@ -1,13 +1,14 @@
 using UnityEngine;
 using Bozo.ModularCharacters;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Game.Shop.Visuals
 {
     /// <summary>
     /// Character viewer implementation using BoZo Stylized Modular Characters system
     /// </summary>
-    public class CharacterViewer : MonoBehaviour, I3DProductViewer
+    public class CharacterViewer : MonoBehaviour
     {
         [Header("References")]
         [SerializeField] private GameObject _viewerRoot;
@@ -70,6 +71,108 @@ namespace Game.Shop.Visuals
 
             return json;
         }
+
+        #region Editing Methods
+        public void ChangePart(string partType, int direction)
+        {
+            if (_currentCharacter == null) return;
+
+            // This logic depends on BoZo implementation. 
+            // Assuming OutfitSystem has methods to cycle parts or we access components directly.
+            // Since we don't have the exact API, we'll implement a wrapper that looks for common BoZo patterns
+            // or uses the SaveSystem helper if available.
+            
+            // Example implementation logic suitable for most modular character systems:
+            switch(partType.ToLower())
+            {
+                case "hair":
+                    // _currentCharacter.NextHair(); // Hypothetical
+                    Debug.Log($"[CharacterViewer] Changing Hair: {direction}");
+                    CyclePart("Hair", direction);
+                    break;
+                case "head":
+                    Debug.Log($"[CharacterViewer] Changing Head: {direction}");
+                    CyclePart("Head", direction);
+                    break;
+                case "torso":
+                    Debug.Log($"[CharacterViewer] Changing Torso: {direction}");
+                    CyclePart("Torso", direction);
+                    break;
+                case "legs":
+                    Debug.Log($"[CharacterViewer] Changing Legs: {direction}");
+                    CyclePart("Legs", direction);
+                    break;
+            }
+        }
+
+        private void CyclePart(string partName, int direction)
+        {
+            if (_currentCharacter == null) return;
+
+            // Load all available outfits from Resources
+            var allOutfits = Resources.LoadAll<Outfit>("");
+            
+            // Filter outfits by type (Hair, Head, Torso, Legs)
+            var matchingOutfits = new List<Outfit>();
+            foreach (var outfit in allOutfits)
+            {
+                if (outfit != null && outfit.Type != null && outfit.Type.name == partName)
+                {
+                    matchingOutfits.Add(outfit);
+                }
+            }
+
+            if (matchingOutfits.Count == 0)
+            {
+                Debug.LogWarning($"[CharacterViewer] No outfits found for type: {partName}");
+                return;
+            }
+
+            // Get current outfit of this type
+            var currentOutfit = _currentCharacter.GetOutfit(partName);
+            int currentIndex = -1;
+
+            if (currentOutfit != null)
+            {
+                // Find current outfit index
+                for (int i = 0; i < matchingOutfits.Count; i++)
+                {
+                    if (matchingOutfits[i].name == currentOutfit.name || 
+                        matchingOutfits[i].name.Replace("(Clone)", "") == currentOutfit.name.Replace("(Clone)", ""))
+                    {
+                        currentIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            // Calculate new index
+            int newIndex;
+            if (currentIndex == -1)
+            {
+                newIndex = direction > 0 ? 0 : matchingOutfits.Count - 1;
+            }
+            else
+            {
+                newIndex = currentIndex + direction;
+                if (newIndex < 0) newIndex = matchingOutfits.Count - 1;
+                if (newIndex >= matchingOutfits.Count) newIndex = 0;
+            }
+
+            // Remove current outfit and attach new one
+            if (currentOutfit != null)
+            {
+                // Remove using OutfitType from the current outfit
+                _currentCharacter.RemoveOutfit(currentOutfit.Type, true);
+            }
+
+            var newOutfit = matchingOutfits[newIndex];
+            var inst = _currentCharacter.InstantiateOutfit(newOutfit);
+            inst.Attach();
+            
+            Debug.Log($"[CharacterViewer] Changed {partName} from index {currentIndex} to {newIndex} ({newOutfit.name})");
+        }
+        #endregion
 
         public void LoadCustomization(string customizationJson)
         {

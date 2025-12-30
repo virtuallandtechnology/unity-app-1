@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using static ApiClient;
+using Game.Shop.Visuals;
 
 namespace VirtualLand
 {
@@ -20,6 +21,18 @@ namespace VirtualLand
         public Image avatarImageProfile;
         public Image avatarImageHome;
 
+        [Header("Purchased Characters")]
+        [SerializeField] private Button _viewPurchasedCharactersButton;
+        [SerializeField] private PurchasedCharactersViewer _purchasedCharactersViewer;
+
+        [Header("Main Character Selection")]
+        [SerializeField] private Button _selectMainCharacterButton;
+        [SerializeField] private MainCharacterSelector _mainCharacterSelector;
+
+        [Header("Character Editor")]
+        [SerializeField] private Button _editMainCharacterButton;
+        [SerializeField] private MainCharacterEditor _mainCharacterEditor;
+
         private int _currentProfileID;
 
         private void OnEnable()
@@ -27,6 +40,86 @@ namespace VirtualLand
             if (LoadingHandler.Get() != null) LoadingHandler.Get().SetVisible(true);
 
             ApiClient.Get().GetProfileInfo(OnGetInfoSuccess, OnFail);
+
+            // Setup purchased characters button
+            if (_viewPurchasedCharactersButton != null)
+            {
+                _viewPurchasedCharactersButton.onClick.RemoveAllListeners();
+                _viewPurchasedCharactersButton.onClick.AddListener(OnViewPurchasedCharactersClicked);
+            }
+
+            // Setup main character selection button
+            if (_selectMainCharacterButton != null)
+            {
+                _selectMainCharacterButton.onClick.RemoveAllListeners();
+                _selectMainCharacterButton.onClick.AddListener(OnSelectMainCharacterClicked);
+            }
+
+            // Setup edit main character button
+            if (_editMainCharacterButton != null)
+            {
+                _editMainCharacterButton.onClick.RemoveAllListeners();
+                _editMainCharacterButton.onClick.AddListener(OnEditMainCharacterClicked);
+            }
+        }
+
+        private void OnViewPurchasedCharactersClicked()
+        {
+            if (_purchasedCharactersViewer != null)
+            {
+                _purchasedCharactersViewer.OpenViewer();
+            }
+            else
+            {
+                Debug.LogWarning("[Profile] PurchasedCharactersViewer is not assigned!");
+            }
+        }
+
+        private void OnSelectMainCharacterClicked()
+        {
+            if (_mainCharacterSelector != null)
+            {
+                _mainCharacterSelector.OpenSelector();
+            }
+            else
+            {
+                Debug.LogWarning("[Profile] MainCharacterSelector is not assigned!");
+            }
+        }
+
+        private void OnEditMainCharacterClicked()
+        {
+            var mainCharacterManager = MainCharacterManager.Instance;
+            if (mainCharacterManager == null || mainCharacterManager.MainCharacterId <= 0)
+            {
+                if (NotificationController.Get() != null)
+                {
+                    NotificationController.Get().Show("لطفا ابتدا یک کاراکتر اصلی انتخاب کنید");
+                }
+                return;
+            }
+
+            // Load main character and show editor
+            mainCharacterManager.LoadMainCharacterProduct(
+                (product) =>
+                {
+                    if (_mainCharacterEditor != null)
+                    {
+                        _mainCharacterEditor.OpenEditor(product, mainCharacterManager.MainCharacterStyle);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[Profile] MainCharacterEditor is not assigned!");
+                    }
+                },
+                (error) =>
+                {
+                    Debug.LogError($"[Profile] Failed to load main character: {error}");
+                    if (NotificationController.Get() != null)
+                    {
+                        NotificationController.Get().Show($"خطا در بارگذاری کاراکتر: {error}");
+                    }
+                });
         }
 
         private void OnGetInfoSuccess(ApiResponse<User> response)

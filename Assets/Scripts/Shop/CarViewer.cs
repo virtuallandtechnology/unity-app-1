@@ -6,7 +6,7 @@ namespace Game.Shop.Visuals
     /// <summary>
     /// Car viewer implementation - Example for other product types
     /// </summary>
-    public class CarViewer : MonoBehaviour, I3DProductViewer
+    public class CarViewer : MonoBehaviour
     {
         [Header("References")]
         [SerializeField] private GameObject _viewerRoot;

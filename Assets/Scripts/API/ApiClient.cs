@@ -19,6 +19,7 @@ public partial class ApiClient
         }
         return instance;
     }
+
     public UserData GetUserData()
     {
         return _userdata;
@@ -73,6 +74,13 @@ public partial class ApiClient
         public int product_id;
         public string payable_slug;
         public Dictionary<string, string> metadata;
+    }
+
+    [Serializable]
+    public class UpdateProfileRequest
+    {
+        public string avatar_id;
+        public string style;
     }
 
     [Serializable]
@@ -589,6 +597,31 @@ public partial class ApiClient
 
             return "User_" + id;
         }
+    }
+
+
+
+    public void UpdateUserProfile(int avatarId, string styleJson, Action<ApiResponse<object>> onSuccess, Action<string> onFail)
+    {
+        string token = PlayerPrefs.GetString("token");
+        string url = $"{GameConfig.Instance.BaseURL}/user/profile/update";
+
+        var data = new UpdateProfileRequest
+        {
+            avatar_id = avatarId.ToString(),
+            style = styleJson 
+        };
+
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Post,
+            (req, resp) => HandleResponse<object>(req, resp, onSuccess, onFail));
+
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.AddHeader("Content-Type", "application/json");
+
+        byte[] body = System.Text.Encoding.UTF8.GetBytes(JsonUtility.ToJson(data));
+        request.UploadSettings.UploadStream = new System.IO.MemoryStream(body);
+
+        request.Send();
     }
 
     [Serializable]

@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9cbf5a7f1094e7b4183b5ab8f53864ee, type: 3}
+  m_Name: CharacterWidgetConfig
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Shop.Preview.PreviewWidgetConfig
+  widgetId: 41
+  priority: 20
+  supportedCategories:
+  - CIVILIANS
+  widgetPrefab: {fileID: 1789525676932364430, guid: db85b83cc3ebcc2408136893d9f34849, type: 3}
+  description: Character preview using BoZo system

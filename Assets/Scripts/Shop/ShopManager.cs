@@ -28,28 +28,11 @@ public class ShopManager : MonoBehaviour
     private ViewLevel _currentViewLevel = ViewLevel.MainCategories;
     private List<ApiClient.CategoryItem> _allCategories;
     private ApiClient.CategoryItem _currentMainCategory;
-    [Header("3D View")]
-    [SerializeField] private Game.Shop.Visuals.Shop3DViewControllerV2 _shop3DViewControllerPrefab;
-    private Game.Shop.Visuals.Shop3DViewControllerV2 _shop3DViewControllerInstance;
 
     private string _currentSubCategorySlug;
     private List<CategoryButton> _spawnedCategoryButtons = new List<CategoryButton>();
 
-    public Game.Shop.Visuals.Shop3DViewControllerV2 Get3DViewController()
-    {
-        if (_shop3DViewControllerInstance == null)
-        {
-            // Try to find in scene first (even if inactive)
-            _shop3DViewControllerInstance = FindObjectOfType<Game.Shop.Visuals.Shop3DViewControllerV2>(true);
 
-            // If still null and we have a prefab, instantiate it
-            if (_shop3DViewControllerInstance == null && _shop3DViewControllerPrefab != null)
-            {
-                _shop3DViewControllerInstance = Instantiate(_shop3DViewControllerPrefab);
-            }
-        }
-        return _shop3DViewControllerInstance;
-    }
 
     private void Start()
     {
