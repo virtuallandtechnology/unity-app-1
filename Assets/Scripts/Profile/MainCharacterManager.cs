@@ -73,10 +73,22 @@ namespace VirtualLand
 
             // Save to PlayerPrefs
             PlayerPrefs.SetInt(MAIN_CHARACTER_ID_KEY, _mainCharacterId);
-            if (!string.IsNullOrEmpty(_mainCharacterStyle))
+            if (!string.IsNullOrEmpty(styleJson))
             {
-                PlayerPrefs.SetString(MAIN_CHARACTER_STYLE_KEY, _mainCharacterStyle);
+                PlayerPrefs.SetString(MAIN_CHARACTER_STYLE_KEY, styleJson);
             }
+            else
+            {
+                PlayerPrefs.DeleteKey(MAIN_CHARACTER_STYLE_KEY);
+            }
+            
+            // Cache the ShopProduct as JSON to avoid API call on next load
+            if (characterProduct != null)
+            {
+                string productJson = JsonUtility.ToJson(characterProduct);
+                PlayerPrefs.SetString("MainCharacterProduct", productJson);
+            }
+            
             PlayerPrefs.Save();
 
             // Also save to API profile
@@ -110,18 +122,15 @@ namespace VirtualLand
             if (_mainCharacterId <= 0) return;
 
             // Update profile with main character ID and style
-            if (!string.IsNullOrEmpty(_mainCharacterStyle))
-            {
-                ApiClient.Get().UpdateUserProfile(_mainCharacterId, _mainCharacterStyle,
-                    (response) =>
-                    {
-                        Debug.Log("[MainCharacterManager] Main character saved to profile successfully");
-                    },
-                    (error) =>
-                    {
-                        Debug.LogError($"[MainCharacterManager] Failed to save main character to profile: {error}");
-                    });
-            }
+            ApiClient.Get().UpdateUserProfile(_mainCharacterId, _mainCharacterStyle ?? string.Empty,
+                (response) =>
+                {
+                    Debug.Log("[MainCharacterManager] Main character saved to profile successfully");
+                },
+                (error) =>
+                {
+                    Debug.LogError($"[MainCharacterManager] Failed to save main character to profile: {error}");
+                });
         }
 
         /// <summary>
@@ -148,6 +157,27 @@ namespace VirtualLand
             {
                 onSuccess?.Invoke(_mainCharacterProduct);
                 return;
+            }
+            
+            // Try loading from cache first
+            if (PlayerPrefs.HasKey("MainCharacterProduct"))
+            {
+                string json = PlayerPrefs.GetString("MainCharacterProduct");
+                try
+                {
+                    var cachedProduct = JsonUtility.FromJson<ShopProduct>(json);
+                    if (cachedProduct != null && cachedProduct.id == _mainCharacterId)
+                    {
+                        _mainCharacterProduct = cachedProduct;
+                        Debug.Log("[MainCharacterManager] Loaded main character from cache");
+                        onSuccess?.Invoke(_mainCharacterProduct);
+                        return; // Return early if cache hit
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[MainCharacterManager] Failed to load cached product: {e.Message}");
+                }
             }
 
             // Load from API
@@ -183,6 +213,26 @@ namespace VirtualLand
             PlayerPrefs.Save();
             OnMainCharacterChanged?.Invoke(-1);
         }
+
+        /// <summary>
+        /// Sync main character ID from API profile (does not trigger API save)
+        /// </summary>
+        public void SyncMainCharacterId(int characterId)
+        {
+            if (characterId <= 0) return;
+
+            if (_mainCharacterId != characterId)
+            {
+                _mainCharacterId = characterId;
+                // We don't have the style JSON from this call usually, so we might need to rely on API loading it later
+                // or just keep it null until edited.
+                
+                PlayerPrefs.SetInt(MAIN_CHARACTER_ID_KEY, _mainCharacterId);
+                PlayerPrefs.Save();
+                
+                OnMainCharacterChanged?.Invoke(_mainCharacterId);
+                Debug.Log($"[MainCharacterManager] Synced main character ID from profile: {_mainCharacterId}");
+            }
+        }
     }
 }
-

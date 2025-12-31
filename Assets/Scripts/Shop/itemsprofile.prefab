@@ -639,9 +639,9 @@ GameObject:
   - component: {fileID: 1517062688852891470}
   - component: {fileID: 1517062688852891469}
   - component: {fileID: 3618060704816929089}
-  - component: {fileID: 1870182215346969369}
+  - component: {fileID: -3758235130532010513}
   m_Layer: 5
-  m_Name: itemshop
+  m_Name: itemsprofile
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -726,11 +726,11 @@ MonoBehaviour:
   _productImage: {fileID: 1517062688390425848}
   _titleText: {fileID: 1517062688252479934}
   _priceText: {fileID: 1517062688543058344}
-  _actionToggle: {fileID: 1870182215346969369}
+  _actionToggle: {fileID: 0}
   _toggleText: {fileID: 4759286329891151539}
   _ownedIndicator: {fileID: 3047129328186568123}
   _view3DButton: {fileID: 1892204969336221070}
---- !u!114 &1870182215346969369
+--- !u!114 &-3758235130532010513
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -739,9 +739,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1517062688852891458}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9085046f02f69544eb97fd06b6048fe2, type: 3}
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Toggle
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
     m_WrapAround: 0
@@ -771,13 +771,9 @@ MonoBehaviour:
     m_DisabledTrigger: Disabled
   m_Interactable: 1
   m_TargetGraphic: {fileID: 1517062688852891469}
-  toggleTransition: 1
-  graphic: {fileID: 1517062688795659204}
-  m_Group: {fileID: 0}
-  onValueChanged:
+  m_OnClick:
     m_PersistentCalls:
       m_Calls: []
-  m_IsOn: 0
 --- !u!1 &1517062689035916022
 GameObject:
   m_ObjectHideFlags: 0

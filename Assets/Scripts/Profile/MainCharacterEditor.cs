@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using Game.Shop.Visuals;
 using static ApiClient;
+using Bozo.ModularCharacters;
 
 namespace VirtualLand
 {
@@ -28,6 +29,7 @@ namespace VirtualLand
         [SerializeField] private Button _saveButton;
         [SerializeField] private TextMeshProUGUI _feedbackText;
         [SerializeField] private TextMeshProUGUI _characterNameText;
+        [SerializeField] private Canvas canvasShop;
 
         private string[] _editableCategories = new string[] { "Hair", "Head", "Torso", "Legs" };
         private int _currentCategoryIndex = 0;
@@ -61,6 +63,7 @@ namespace VirtualLand
 
             if (_saveButton != null)
                 _saveButton.onClick.AddListener(OnSaveClicked);
+
         }
 
         /// <summary>
@@ -73,7 +76,7 @@ namespace VirtualLand
                 Debug.LogWarning("[MainCharacterEditor] Cannot open editor for null character");
                 return;
             }
-
+            _characterViewer.gameObject.SetActive(true);
             _currentCharacter = characterProduct;
 
             if (_editorPanel != null) _editorPanel.SetActive(true);
@@ -85,10 +88,20 @@ namespace VirtualLand
             if (_characterViewer != null)
             {
                 _characterViewer.Initialize(characterProduct);
+
                 _characterViewer.LoadModel();
 
-                // Load saved customization if available
-                if (!string.IsNullOrEmpty(savedStyle))
+                // Check for local save first
+                var localSaveData = BMAC_SaveSystem.GetDataFromID(characterProduct.title);
+                
+                if (localSaveData != null)
+                {
+                    string json = JsonUtility.ToJson(localSaveData);
+                    _characterViewer.LoadCustomization(json);
+                    Debug.Log($"[MainCharacterEditor] Loaded local save for {characterProduct.title}");
+                }
+                // Load saved customization from API if available and no local save
+                else if (!string.IsNullOrEmpty(savedStyle))
                 {
                     _characterViewer.LoadCustomization(savedStyle);
                 }
@@ -96,6 +109,7 @@ namespace VirtualLand
 
             _currentCategoryIndex = 0;
             UpdateEditorUI();
+            canvasShop.enabled = false;
         }
 
         /// <summary>
@@ -106,6 +120,7 @@ namespace VirtualLand
             if (_editorPanel != null) _editorPanel.SetActive(false);
             if (_characterViewer != null) _characterViewer.Cleanup();
             _currentCharacter = null;
+            canvasShop.enabled = true;
         }
 
         private void NextCategory()
@@ -141,40 +156,35 @@ namespace VirtualLand
         {
             if (_characterViewer == null || _currentCharacter == null)
             {
-                ShowFeedback("خطا: کاراکتری برای ذخیره وجود ندارد");
-                return;
-            }
-
-            string json = _characterViewer.SaveCustomization();
-            if (string.IsNullOrEmpty(json))
-            {
-                ShowFeedback("خطا در ذخیره تغییرات");
+                ShowFeedback("No character to save");
                 return;
             }
 
             // Disable save button during save
             if (_saveButton != null) _saveButton.interactable = false;
-            ShowFeedback("در حال ذخیره...");
+            ShowFeedback("Saving...");
 
-            // Save to API
-            ApiClient.Get().UpdateUserProfile(_currentCharacter.id, json,
-                (response) =>
+            // Use CharacterCreator's save logic which handles local save and API call
+            var creator = _characterViewer.GetCharacterCreator();
+            if (creator != null)
+            {
+                creator.SaveCharacter(_currentCharacter.id, _currentCharacter.title, () =>
                 {
-                    // Also update main character manager
-                    if (_characterManager != null)
-                    {
-                        _characterManager.SetMainCharacter(_currentCharacter, json);
-                    }
+                    ShowFeedback("Changes saved successfully!");
+                    if (_saveButton != null) _saveButton.interactable = true;
 
-                    ShowFeedback("تغییرات با موفقیت ذخیره شد!");
-                    if (_saveButton != null) _saveButton.interactable = true;
-                },
-                (error) =>
-                {
-                    ShowFeedback($"خطا: {error}");
-                    if (_saveButton != null) _saveButton.interactable = true;
+                    // Update manager with the new style (we might need to reload it or just notify)
+                    // Since we saved to disk, next time we load, we should load from disk if possible
+                    // or rely on the API update we just did.
                 });
+            }
+            else
+            {
+                ShowFeedback("Error: Character Creator not found");
+                if (_saveButton != null) _saveButton.interactable = true;
+            }
         }
+
 
         private void ShowFeedback(string message)
         {

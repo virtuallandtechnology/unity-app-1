@@ -143,7 +143,7 @@ namespace VirtualLand
                 string displayText = product.title;
                 if (isMain)
                 {
-                    displayText += " (کاراکتر اصلی)";
+                    displayText += " (Main Character)";
                 }
                 text.text = displayText;
             }
@@ -167,14 +167,14 @@ namespace VirtualLand
         {
             if (_characterManager == null)
             {
-                ShowFeedback("خطا: سیستم مدیریت کاراکتر یافت نشد");
+                ShowFeedback("Error: Character management system not found");
                 return;
             }
 
             // Set as main character
             _characterManager.SetMainCharacter(product);
 
-            ShowFeedback($"کاراکتر '{product.title}' به عنوان کاراکتر اصلی انتخاب شد");
+            ShowFeedback($"Character '{product.title}' has been selected as the main character");
             UpdateCurrentMainCharacterDisplay();
 
             // Refresh list to show updated main character indicator
@@ -191,16 +191,16 @@ namespace VirtualLand
                 _characterManager.LoadMainCharacterProduct(
                     (product) =>
                     {
-                        _currentMainCharacterText.text = $"کاراکتر اصلی: {product.title}";
+                        _currentMainCharacterText.text = $"Main Character: {product.title}";
                     },
                     (error) =>
                     {
-                        _currentMainCharacterText.text = $"کاراکتر اصلی: ID {_characterManager.MainCharacterId}";
+                        _currentMainCharacterText.text = $"Main Character: ID {_characterManager.MainCharacterId}";
                     });
             }
             else
             {
-                _currentMainCharacterText.text = "کاراکتر اصلی انتخاب نشده";
+                _currentMainCharacterText.text = "No main character selected";
             }
         }
 

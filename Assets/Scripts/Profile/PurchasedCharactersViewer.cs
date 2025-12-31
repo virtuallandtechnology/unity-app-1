@@ -49,12 +49,12 @@ namespace VirtualLand
             if (_viewerPanel != null) _viewerPanel.SetActive(false);
             if (_editorPanel != null) _editorPanel.SetActive(false);
 
-            // Button listeners
-            if (_closeButton != null)
-                _closeButton.onClick.AddListener(CloseViewer);
+            // // Button listeners
+            // if (_closeButton != null)
+            //     _closeButton.onClick.AddListener(CloseViewer);
 
-            if (_backButton != null)
-                _backButton.onClick.AddListener(CloseViewer);
+            // if (_backButton != null)
+            //     _backButton.onClick.AddListener(CloseViewer);
 
             if (_nextCategoryButton != null)
                 _nextCategoryButton.onClick.AddListener(NextCategory);
@@ -84,11 +84,11 @@ namespace VirtualLand
         /// <summary>
         /// Close the viewer
         /// </summary>
-        public void CloseViewer()
+        public void CloseViewer(bool cleanup = true)
         {
             if (_viewerPanel != null) _viewerPanel.SetActive(false);
             if (_editorPanel != null) _editorPanel.SetActive(false);
-            if (_characterViewer != null) _characterViewer.Cleanup();
+            if (cleanup && _characterViewer != null) _characterViewer.Cleanup();
             _currentCharacterProduct = null;
         }
 
@@ -316,4 +316,3 @@ namespace VirtualLand
         }
     }
 }
-

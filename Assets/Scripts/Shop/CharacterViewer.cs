@@ -14,6 +14,7 @@ namespace Game.Shop.Visuals
         [SerializeField] private GameObject _viewerRoot;
         [SerializeField] private Transform _characterSpawnPoint;
         [SerializeField] private OutfitSystem _outfitSystemPrefab;
+        [SerializeField] private CharacterCreator _characterCreator;
 
         [Header("Supported Categories")]
         [SerializeField] private string[] _supportedCategories = new string[]
@@ -26,13 +27,17 @@ namespace Game.Shop.Visuals
         private ApiClient.ShopProduct _currentProduct;
         private CharacterData _currentCustomization;
 
+        public CharacterCreator GetCharacterCreator()
+        {
+            return _characterCreator;
+        }
+
         public void Initialize(ApiClient.ShopProduct productData)
         {
             _currentProduct = productData;
             this.gameObject.SetActive(true); // Ensure the viewer itself is active
             _viewerRoot.SetActive(true);
         }
-
         public void LoadModel()
         {
             // Clear existing character
@@ -43,9 +48,9 @@ namespace Game.Shop.Visuals
 
             // Instantiate character
             _currentCharacter = Instantiate(_outfitSystemPrefab, _characterSpawnPoint);
+            _characterCreator.ReplaceCharacter(_currentCharacter);
             _currentCharacter.transform.localPosition = Vector3.zero;
             _currentCharacter.transform.localRotation = Quaternion.identity;
-
             // Load default or saved customization
             if (_currentCustomization != null)
             {

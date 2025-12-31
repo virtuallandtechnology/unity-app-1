@@ -33,6 +33,9 @@ namespace VirtualLand
         [SerializeField] private Button _editMainCharacterButton;
         [SerializeField] private MainCharacterEditor _mainCharacterEditor;
 
+        [Header("Main Character Display")]
+        [SerializeField] private TextMeshProUGUI _mainCharacterText;
+
         private int _currentProfileID;
 
         private void OnEnable()
@@ -61,6 +64,16 @@ namespace VirtualLand
                 _editMainCharacterButton.onClick.RemoveAllListeners();
                 _editMainCharacterButton.onClick.AddListener(OnEditMainCharacterClicked);
             }
+
+            // Subscribe to main character changes
+            var mainCharacterManager = MainCharacterManager.Instance;
+            if (mainCharacterManager != null)
+            {
+                mainCharacterManager.OnMainCharacterChanged += OnMainCharacterChanged;
+            }
+
+            // Update main character display
+            UpdateMainCharacterDisplay();
         }
 
         private void OnViewPurchasedCharactersClicked()
@@ -89,12 +102,18 @@ namespace VirtualLand
 
         private void OnEditMainCharacterClicked()
         {
+            // Close purchased characters viewer if open
+            if (_purchasedCharactersViewer != null)
+            {
+                _purchasedCharactersViewer.CloseViewer(cleanup: false);
+            }
+
             var mainCharacterManager = MainCharacterManager.Instance;
             if (mainCharacterManager == null || mainCharacterManager.MainCharacterId <= 0)
             {
                 if (NotificationController.Get() != null)
                 {
-                    NotificationController.Get().Show("لطفا ابتدا یک کاراکتر اصلی انتخاب کنید");
+                    NotificationController.Get().Show("Please select a main character first");
                 }
                 return;
             }
@@ -117,9 +136,50 @@ namespace VirtualLand
                     Debug.LogError($"[Profile] Failed to load main character: {error}");
                     if (NotificationController.Get() != null)
                     {
-                        NotificationController.Get().Show($"خطا در بارگذاری کاراکتر: {error}");
+                        NotificationController.Get().Show($"Error loading character: {error}");
                     }
                 });
+        }
+
+        private void UpdateMainCharacterDisplay()
+        {
+            if (_mainCharacterText == null) return;
+
+            var mainCharacterManager = MainCharacterManager.Instance;
+            if (mainCharacterManager == null) return;
+
+            if (mainCharacterManager.MainCharacterId > 0)
+            {
+                // Load main character name
+                mainCharacterManager.LoadMainCharacterProduct(
+                    (product) =>
+                    {
+                        _mainCharacterText.text = $"Main Character: {product.title}";
+                    },
+                    (error) =>
+                    {
+                        _mainCharacterText.text = $"Main Character: ID {mainCharacterManager.MainCharacterId}";
+                    });
+            }
+            else
+            {
+                _mainCharacterText.text = "No main character selected";
+            }
+        }
+
+        private void OnMainCharacterChanged(int characterId)
+        {
+            UpdateMainCharacterDisplay();
+        }
+
+        private void OnDisable()
+        {
+            // Unsubscribe from main character changes
+            var mainCharacterManager = MainCharacterManager.Instance;
+            if (mainCharacterManager != null)
+            {
+                mainCharacterManager.OnMainCharacterChanged -= OnMainCharacterChanged;
+            }
         }
 
         private void OnGetInfoSuccess(ApiResponse<User> response)
@@ -137,6 +197,13 @@ namespace VirtualLand
                 if (user.profile != null)
                 {
                     _currentProfileID = user.profile.avatar_id;
+                    
+                    // Sync main character selection
+                    if (MainCharacterManager.Instance != null && _currentProfileID > 0)
+                    {
+                        MainCharacterManager.Instance.SyncMainCharacterId(_currentProfileID);
+                    }
+
                     UpdateAllImages(_currentProfileID);
                 }
             }

@@ -5,7 +5,7 @@ using UnityEditor;
 using System.Collections;
 using TMPro;
 using System.Linq;
-
+using VirtualLand; // Added to access ApiClient
 
 namespace Bozo.ModularCharacters
 {
@@ -85,20 +85,24 @@ namespace Bozo.ModularCharacters
             GenerateTextureSelection();
         }
 
-        private void OnEnable()
-        {
-            character.OnOutfitChanged += OnOutfitUpdate;
-            character.OnRigChanged += OnRigUpdate;
-        }
+
 
         private void OnDisable()
         {
-            character.OnOutfitChanged -= OnOutfitUpdate;
-            character.OnRigChanged -= OnRigUpdate;
+            if (character != null)
+            {
+                character.OnOutfitChanged -= OnOutfitUpdate;
+                character.OnRigChanged -= OnRigUpdate;
+            }
         }
 
         public void Start()
         {
+            if (character != null)
+            {
+                character.OnOutfitChanged += OnOutfitUpdate;
+                character.OnRigChanged += OnRigUpdate;
+            }
             GetBodyBlends();
             GetFaceBlends();
             GetBodyMods();
@@ -136,6 +140,7 @@ namespace Bozo.ModularCharacters
 
         public void GetBodyBlends()
         {
+            if (character == null) return;
             for (int i = 0; i < blendSliders.Count; i++)
             {
                 Destroy(blendSliders[i].gameObject);
@@ -153,6 +158,7 @@ namespace Bozo.ModularCharacters
 
         public void GetFaceBlends()
         {
+            if (character == null) return;
             for (int i = 0; i < faceBlendSliders.Count; i++)
             {
                 Destroy(faceBlendSliders[i].gameObject);
@@ -170,6 +176,7 @@ namespace Bozo.ModularCharacters
 
         public void GetBodyMods()
         {
+            if (character == null) return;
             var mods = character.GetMods().Values.ToList();
 
             for (int i = 0; i < ModSliders.Count; i++)
@@ -266,6 +273,7 @@ namespace Bozo.ModularCharacters
 
         public void SetOutfit(Outfit outfit) 
         {
+            if (character == null) return;
             var inst = Instantiate(outfit, character.transform);
             SetColorPickerObject(inst);
             SwitchTextureCatagory(outfit.TextureCatagory);
@@ -306,6 +314,7 @@ namespace Bozo.ModularCharacters
 
         public void RemoveOutfit()
         {
+            if (character == null) return;
             if (type == null) return;
             character.RemoveOutfit(type, true);
             colorPickerControl.RemoveObject();
@@ -326,6 +335,7 @@ namespace Bozo.ModularCharacters
 
         public void SwitchCatagory(string catagory) 
         {
+            if (character == null) return;
             foreach (var item in outfitSelectors)
             {
                 item.SetVisable(catagory);
@@ -356,6 +366,7 @@ namespace Bozo.ModularCharacters
 
         public void SetColorPickerObject(string type)
         {
+            if (character == null) return;
             var outfit = character.GetOutfit(type);
             colorPickerControl.ChangeObject(outfit);
         }
@@ -367,9 +378,22 @@ namespace Bozo.ModularCharacters
 
         public void ReplaceCharacter(OutfitSystem character)
         {
-            Destroy(this.character.gameObject);
+            if (this.character != null)
+            {
+                this.character.OnOutfitChanged -= OnOutfitUpdate;
+                this.character.OnRigChanged -= OnRigUpdate;
+                Destroy(this.character.gameObject);
+            }
             this.character = character;
-            Spinner.SetCharacter(character.transform);
+            if (this.character != null)
+            {
+                this.character.OnOutfitChanged += OnOutfitUpdate;
+                this.character.OnRigChanged += OnRigUpdate;
+            }
+            if (Spinner != null)
+            {
+                Spinner.SetCharacter(character.transform);
+            }
         }
 
         public void GetCurrentCatagory()
@@ -380,12 +404,14 @@ namespace Bozo.ModularCharacters
 
         public void CopyColor(string copyTo)
         {
+            if (character == null) return;
             var copyOutfit = character.GetOutfit((OutfitType)Enum.Parse(typeof(OutfitType), copyTo));
             colorPickerControl.CopyColor(copyOutfit);
         }
 
         public void ToggleWalk(bool value)
         {
+            if (character == null) return;
             character.animator.SetBool("isWalk", value);
         }
 
@@ -394,14 +420,21 @@ namespace Bozo.ModularCharacters
             StartCoroutine(Save());
         }
 
+        public void SaveCharacter(int avatarId, string name, Action onComplete = null)
+        {
+            if (CharacterName != null) CharacterName.text = name;
+            StartCoroutine(Save(avatarId, onComplete));
+        }
+
         public Outfit GetOutfit(string outfitName)
         {
             return OutfitDataBase[outfitName];
         }
 
         [ContextMenu("Save")]
-        private IEnumerator Save()
+        private IEnumerator Save(int avatarId = -1, Action onComplete = null)
         {
+            if (character == null) yield break;
             yield return new WaitForEndOfFrame();
             if(CharacterName.text.Length == 0)
             {
@@ -446,11 +479,64 @@ namespace Bozo.ModularCharacters
 
             UpdateCharacterSaves();
 
+            if (avatarId != -1)
+            {
+                // Construct API JSON
+                int hairIndex = GetOutfitIndex("Hair");
+                int skinIndex = GetOutfitIndex("Head"); // Assuming Head maps to skin/face
 
+                string json = $"{{\"avatar_id\":\"{avatarId}\",\"style\":{{\"hair\":\"{hairIndex}\",\"skin\":\"{skinIndex}\"}}}}";
+
+                Debug.Log($"[CharacterCreator] Saving to API: {json}");
+
+                ApiClient.Get().UpdateUserProfile(avatarId, json,
+                    (res) =>
+                    {
+                        Debug.Log("Profile updated successfully via API");
+                        onComplete?.Invoke();
+                    },
+                    (err) =>
+                    {
+                        Debug.LogError($"Failed to update profile: {err}");
+                        onComplete?.Invoke();
+                    });
+            }
+            else
+            {
+                onComplete?.Invoke();
+            }
+        }
+
+        private int GetOutfitIndex(string category)
+        {
+            if (character == null) return 0;
+            var currentOutfit = character.GetOutfit(category);
+            if (currentOutfit == null) return 0;
+
+            // Find index in OutfitDataBase or Resources
+            // We use the list of all outfits of this type to determine index
+            var allOutfits = Resources.LoadAll<Outfit>("");
+            int index = 0;
+            int matchIndex = 0;
+
+            foreach (var outfit in allOutfits)
+            {
+                if (outfit.Type != null && outfit.Type.name == category)
+                {
+                    // Check if names match (ignoring (Clone))
+                    if (outfit.name == currentOutfit.name.Replace("(Clone)", ""))
+                    {
+                        matchIndex = index;
+                    }
+                    index++;
+                }
+            }
+            return matchIndex;
         }
 
         public void LoadCharacter(CharacterData data)
         {
+            if (character == null) return;
             loadedCharacterNameText.text = data.characterName;
             BMAC_SaveSystem.LoadCharacter(character, data);
         }
