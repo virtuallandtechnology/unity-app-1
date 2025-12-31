@@ -482,10 +482,34 @@ namespace Bozo.ModularCharacters
             if (avatarId != -1)
             {
                 // Construct API JSON
-                int hairIndex = GetOutfitIndex("Hair");
-                int skinIndex = GetOutfitIndex("Head"); // Assuming Head maps to skin/face
+                // Get full character data
+                var data = BMAC_SaveSystem.GetCharacterData(character);
+                
+                // Optimized Data: Remove Position and Rotation info to reduce size
+                if (data.bodyMods != null)
+                {
+                    foreach (var mod in data.bodyMods)
+                    {
+                        mod.posValue = 0;
+                        mod.position = Vector3.zero;
+                        mod.rotation = 0;
+                    }
+                }
 
-                string json = $"{{\"avatar_id\":\"{avatarId}\",\"style\":{{\"hair\":\"{hairIndex}\",\"skin\":\"{skinIndex}\"}}}}";
+                // Create filtered DTO
+                var saveData = new CharacterSaveData
+                {
+                    characterName = data.characterName,
+                    bodyIDs = data.bodyIDs,
+                    bodyShapes = data.bodyShapes,
+                    faceIDs = data.faceIDs,
+                    faceShapes = data.faceShapes,
+                    bodyModsKeys = data.bodyModsKeys,
+                    bodyMods = data.bodyMods,
+                    outfitDatas = data.outfitDatas
+                };
+                
+                string json = JsonUtility.ToJson(saveData);
 
                 Debug.Log($"[CharacterCreator] Saving to API: {json}");
 
@@ -553,6 +577,19 @@ namespace Bozo.ModularCharacters
             BMAC_SaveSystem.DeleteCharacter(loadedCharacterNameText.text);
             loadedCharacterNameText.text = "";
             UpdateCharacterSaves();
+        }
+
+        [Serializable]
+        private class CharacterSaveData
+        {
+            public string characterName;
+            public List<string> bodyIDs;
+            public List<float> bodyShapes;
+            public List<string> faceIDs;
+            public List<float> faceShapes;
+            public List<string> bodyModsKeys;
+            public List<BodyModData> bodyMods;
+            public List<OutfitData> outfitDatas;
         }
 
     }

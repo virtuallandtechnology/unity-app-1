@@ -155,6 +155,12 @@ namespace Bozo.ModularCharacters
 
         private void UpdateOutputImage()
         {
+            if (outputTexture == null)
+            {
+                CreateOutputImage();
+                if (outputTexture == null) return; // Should not happen but safety first
+            }
+
             Color currentColor = Color.HSVToRGB(currentHue, currentSat, currentVal);
 
             for (int i = 0; i < outputTexture.height; i++)
@@ -228,6 +234,12 @@ namespace Bozo.ModularCharacters
 
         public void UpdateSVImage()
         {
+            if (svTexture == null)
+            {
+                CreateSVImage();
+                if (svTexture == null) return;
+            }
+
             currentHue = hueSlider.value;
 
             for (int y = 0; y < svTexture.height; y++)
