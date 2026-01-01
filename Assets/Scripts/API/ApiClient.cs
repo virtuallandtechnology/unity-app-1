@@ -1,0 +1,330 @@
+﻿using Best.HTTP;
+using Newtonsoft.Json;
+using System;
+using System.Text;
+using UnityEngine;
+
+public partial class ApiClient
+{
+    private static ApiClient instance;
+    private GameConfig _config;
+    private UserData _userdata;
+    public static ApiClient Get()
+    {
+        if (instance != null)
+            return instance;
+        else
+            return new ApiClient();
+    }
+
+
+    public UserData GetUserData()
+    {
+        return _userdata;
+    }
+
+    [System.Serializable]
+    public class ApiResponse<T>
+    {
+        public bool isSuccess;
+        public string message;
+        public T result;
+        public int code;
+        public object errors;
+    }
+
+
+    private void HandleResponse<T>(HTTPRequest request, HTTPResponse response,
+        Action<ApiResponse<T>> onSuccess, Action<string> onFail) where T : class
+    {
+        switch (request.State)
+        {
+            case HTTPRequestStates.Finished:
+                Debug.Log(response.DataAsText);
+               // try
+                {
+                    var apiResponse = JsonConvert.DeserializeObject<ApiResponse<T>>(response.DataAsText);
+
+                    if (apiResponse == null)
+                    {
+                        Debug.LogError("❌ Could not parse server response.");
+                        onFail?.Invoke("Invalid server response.");
+                        return;
+                    }
+
+                    if (apiResponse.isSuccess)
+                    {
+                        Debug.Log("✅ Success: " + request.Uri + "  " + apiResponse.message);
+                        onSuccess?.Invoke(apiResponse);
+                    }
+                    else
+                    {
+                        string detailedError = apiResponse.message;
+                        Debug.LogWarning("⚠️ Server returned failure: " + detailedError);
+                        onFail?.Invoke(detailedError);
+                    }
+                }
+                break;
+
+            case HTTPRequestStates.Error:
+                Debug.LogError($"❌ Network error: {request.Exception?.Message}");
+                onFail?.Invoke($"Network error: {request.Exception?.Message}");
+                break;
+
+            case HTTPRequestStates.Aborted:
+                Debug.LogError($"❌ Request was aborted");
+                onFail?.Invoke("Request was aborted");
+                break;
+
+            case HTTPRequestStates.ConnectionTimedOut:
+            case HTTPRequestStates.TimedOut:
+                Debug.LogError("❌ Request timed out");
+                onFail?.Invoke("Request timed out");
+                break;
+        }
+    }
+
+
+
+
+
+    [Serializable]
+    public class Passwordclass
+    {
+        public string email;
+        public string name;
+        public string password;
+    }
+
+    public void Register(string username, string password, string email,
+        Action<ApiResponse<UserData>> onSuccess, Action<string> onFail)
+    {
+        string url = GameConfig.Instance.BaseURL + "/auth/register";
+        Debug.Log("url=" + url);
+        var t = new Passwordclass() { name = username, password = password, email = email };
+        Debug.Log("data=" + JsonUtility.ToJson(t));
+
+        var request = new HTTPRequest(new System.Uri(url), HTTPMethods.Post,
+            (req, resp) => HandleResponse<UserData>(req, resp, onSuccess, onFail));
+        request.AddHeader("Content-Type", "application/json");
+
+        byte[] body = Encoding.UTF8.GetBytes(JsonUtility.ToJson(t));
+        request.UploadSettings.UploadStream = new System.IO.MemoryStream(body);
+
+        request.Send();
+    }
+
+
+
+
+
+
+    public void ProfileInfo(string token,
+      Action<ApiResponse<User>> onSuccess, Action<string> onFail)
+    {
+        string url = GameConfig.Instance.BaseURL + "/user/profile/info";
+        Debug.Log("url=" + url);
+
+        var request = new HTTPRequest(new System.Uri(url), HTTPMethods.Get,
+            (req, resp) => HandleResponse<User>(req, resp, (ApiResponse<User> t) =>
+            {
+                Setplayer(t.result);
+                onSuccess.Invoke(t);
+            }, onFail));
+        request.AddHeader("Content-Type", "application/json");
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.AddHeader("Accept", "application/json");
+
+        request.Send();
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public class Latest
+    {
+        public string version { get; set; }
+        public string download { get; set; }
+        public string redirect { get; set; }
+        public string description { get; set; }
+    }
+
+    public class Result
+    {
+        public VERSIONINFO VERSION_INFO { get; set; }
+    }
+
+
+
+    public class VERSIONINFO
+    {
+        public Latest latest { get; set; }
+        public string force_update { get; set; }
+    }
+
+
+
+    public void GetServerConfig(Action<ApiResponse<Result>> onSuccess, Action<string> onFail)
+    {
+        string url = "https://soccer.ecogamecenter.net/api/configs/indexed";
+        Debug.Log("url=" + url);
+
+        var request = new HTTPRequest(new System.Uri(url), HTTPMethods.Get,
+            (req, resp) => HandleResponse<Result>(req, resp, onSuccess, onFail));
+        request.AddHeader("Accept", "application/json");
+
+        request.Send();
+    }
+
+    internal void UpdateProfile(Profile profile, Action<ApiResponse<User>> onsuccess, Action<string> onFail)
+    {
+        string token = PlayerPrefs.GetString("token");
+
+        string url = GameConfig.Instance.BaseURL + "/user/profile/update";
+        Debug.Log("url=" + url);
+
+        string prof = JsonConvert.SerializeObject(profile);
+        Debug.Log("data=" + prof);
+
+        var request = new HTTPRequest(new System.Uri(url), HTTPMethods.Post,
+            (req, resp) => HandleResponse<User>(req, resp, (ApiResponse<User> t) =>
+            {
+                Setplayer(t.result);
+                onsuccess.Invoke(t);
+            }, onFail));
+
+        byte[] body = Encoding.UTF8.GetBytes(prof);
+        request.UploadSettings.UploadStream = new System.IO.MemoryStream(body);
+
+        request.AddHeader("Content-Type", "application/json");
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.AddHeader("Accept", "application/json");
+
+        request.Send();
+    }
+
+
+}
+
+
+
+public partial class ApiClient
+{
+
+    public void Login(string username, string password,
+       Action<ApiResponse<UserData>> onSuccess, Action<string> onFail)
+    {
+        string url = GameConfig.Instance.BaseURL + "/auth/login";
+        Debug.Log("url=" + url);
+        var t = new loginclass() { email = username, password = password };
+        Debug.Log("data=" + JsonUtility.ToJson(t));
+
+        var request = new HTTPRequest(new System.Uri(url), HTTPMethods.Post,
+            (req, resp) => HandleResponse(req, resp, (ApiResponse<UserData> t) =>
+            {
+                playerUserId = t.result.user.id;
+                Debug.Log("playerUserId is set to" + t.result.user.id.ToString());
+                Setplayer(t.result.user);
+                onSuccess.Invoke(t);
+            }, onFail));
+
+
+        request.AddHeader("Content-Type", "application/json");
+
+        byte[] body = Encoding.UTF8.GetBytes(JsonUtility.ToJson(t));
+        request.UploadSettings.UploadStream = new System.IO.MemoryStream(body);
+
+        request.AddHeader("Content-Length", body.Length.ToString());
+
+        request.Send();
+    }
+
+    [Serializable]
+    public class loginclass
+    {
+        public string email;
+        public string password;
+    }
+
+    [System.Serializable]
+    public class UserData
+    {
+        public string token { get; set; }
+        public string token_type { get; set; }
+        
+        public User user { get; set; }
+       
+    }
+
+
+    public static int playerUserId = -1;
+    private static User _player;
+    public static User GetPlayer() => _player;
+    private void Setplayer(User userdata)
+    {
+        Debug.Log("--player data Updated");
+        _player = userdata;
+    }
+
+
+    [System.Serializable]
+    public class User
+    {
+        public int id { get; set; }
+        public int role_id { get; set; }
+        public object username { get; set; }
+        public string name { get; set; }
+        public string email { get; set; }
+
+
+        public bool email_verified { get; set; }
+        public object email_verified_at { get; set; }
+        public Profile profile { get; set; }
+
+        public string created_at { get; set; }
+
+        public string GetUsername()
+        {
+            if ((GetPlayer().profile != null) &&
+                !string.IsNullOrEmpty(GetPlayer().profile.nickname))
+                return GetPlayer().profile.nickname;
+            else
+            {
+                if (!string.IsNullOrEmpty((string)GetPlayer().username))
+                    return (string)GetPlayer().username;
+                else
+                    if (!string.IsNullOrEmpty(GetPlayer().name))
+                    return GetPlayer().name;
+                else
+                    return GetPlayer().email;
+            }
+        }
+
+
+    }
+
+    [System.Serializable]
+    public class Profile
+    {
+        public int avatar_id { get; set; }
+        public string nickname { get; set; }
+    }
+}
+
