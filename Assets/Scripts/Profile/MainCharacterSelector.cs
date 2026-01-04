@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using static ApiClient;
+using VirtualLand.Utility;
 
 namespace VirtualLand
 {
@@ -146,6 +147,13 @@ namespace VirtualLand
                     displayText += " (Main Character)";
                 }
                 text.text = displayText;
+            }
+
+            // Set product image
+            var characterImage = item.GetComponentInChildren<ShopItemUI>()._productImage;
+            if (characterImage != null && !string.IsNullOrEmpty(product.image))
+            {
+                ShopImageLoader.Instance.LoadImage(product.image, characterImage);
             }
 
             // Highlight main character (you can add visual indication here)

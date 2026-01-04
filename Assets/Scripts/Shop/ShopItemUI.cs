@@ -8,7 +8,7 @@ using Game.Shop.Visuals;
 
 public class ShopItemUI : MonoBehaviour
 {
-    [SerializeField] private Image _productImage;
+    public Image _productImage;
     [SerializeField] private TextMeshProUGUI _titleText;
     [SerializeField] private TextMeshProUGUI _priceText;
     [SerializeField] private Toggle _actionToggle;
@@ -48,7 +48,6 @@ public class ShopItemUI : MonoBehaviour
             {
                 Debug.Log($"[ShopItemUI] Opening preview for: {_categorySlug} (ID: {product.id})");
                 
-                // استفاده از سیستم جدید ProductPreviewLoader
                 var loader = Game.Shop.Preview.ProductPreviewLoader.Instance;
                 if (loader != null)
                 {
