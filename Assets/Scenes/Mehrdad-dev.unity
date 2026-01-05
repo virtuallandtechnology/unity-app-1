@@ -5757,6 +5757,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShopManager
   _currentMode: 0
+  _categoryFilterConfig: {fileID: 11400000, guid: 83e52a27bbc59ba478feac3c2856cad2, type: 2}
   _itemsContainer: {fileID: 1393131045}
   _itemPrefab: {fileID: 3618060704816929089, guid: 8dab73e4e3bbc8a469a45c4b862813bb, type: 3}
   _loadingSpinner: {fileID: 137009130}
@@ -8666,7 +8667,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257265604589, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 72
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257366363176, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_textAlignment
@@ -8690,23 +8691,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257366363177, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257366363177, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257366363177, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 48.41
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257366363177, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: 37.5
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257366363177, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: -36
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257652780047, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_IsActive
@@ -8714,11 +8715,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257677923671, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_AnchorMax.x
-      value: 0
+      value: 0.526
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257677923671, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257681116946, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_Pivot.x
@@ -18751,7 +18752,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &6979095660017100109
 RectTransform:
   m_ObjectHideFlags: 0

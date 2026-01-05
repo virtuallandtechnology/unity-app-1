@@ -106,10 +106,30 @@ namespace VirtualLand
                 "POLICE-LAW", "SPECIAL-OPS", "VIP-BUSINESS", "CUSTOM-AVATARS" 
             };
 
-            int categoriesToLoad = characterCategories.Length;
+            // Get filter config to check which categories should be loaded
+            var filterConfig = CategoryFilterConfig.Instance;
+            
+            // Filter categories based on CategoryFilterConfig
+            List<string> categoriesToFetch = new List<string>();
+            foreach (var category in characterCategories)
+            {
+                if (filterConfig.ShouldShowCategory(category))
+                {
+                    categoriesToFetch.Add(category);
+                }
+            }
+
+            // If no categories pass the filter, show all (fallback behavior)
+            if (categoriesToFetch.Count == 0)
+            {
+                Debug.LogWarning("[PurchasedCharactersViewer] No categories passed filter. Loading all categories.");
+                categoriesToFetch.AddRange(characterCategories);
+            }
+
+            int categoriesToLoad = categoriesToFetch.Count;
             _purchasedCharacters.Clear();
 
-            foreach (var category in characterCategories)
+            foreach (var category in categoriesToFetch)
             {
                 ApiClient.Get().GetPurchasedProducts(category,
                     (response) =>

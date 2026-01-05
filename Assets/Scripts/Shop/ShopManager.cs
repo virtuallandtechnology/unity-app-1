@@ -9,6 +9,7 @@ public class ShopManager : MonoBehaviour
 
     [Header("Configuration")]
     [SerializeField] private ShopMode _currentMode = ShopMode.Store;
+    [SerializeField] private CategoryFilterConfig _categoryFilterConfig;
 
     [Header("UI References")]
     [SerializeField] private Transform _itemsContainer;
@@ -80,13 +81,20 @@ public class ShopManager : MonoBehaviour
 
         if (_allCategories == null) return;
 
+        // Get filter config (use singleton if not assigned in inspector)
+        var filterConfig = _categoryFilterConfig != null ? _categoryFilterConfig : CategoryFilterConfig.Instance;
+
         // Show all top-level categories except ROOT
-        // These are the main categories like Cars, Weapons, Skins, etc.
+        // Filter categories based on CategoryFilterConfig
         foreach (var category in _allCategories)
         {
             if (category.slug != "ROOT")
             {
-                CreateMainCategoryButton(category);
+                // Check if this category should be shown based on filter settings
+                if (filterConfig.ShouldShowCategory(category.slug))
+                {
+                    CreateMainCategoryButton(category);
+                }
             }
         }
     }
