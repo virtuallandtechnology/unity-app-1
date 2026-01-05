@@ -511,19 +511,40 @@ namespace Bozo.ModularCharacters
                     outfitDatas = data.outfitDatas
                 };
                 
-                string json = JsonUtility.ToJson(saveData);
+                
+                // Serialize saveData using JsonUtility (handles Unity types properly)
+                string styleJson = JsonUtility.ToJson(saveData);
 
-                Debug.Log($"[CharacterCreator] Saving to API: {json}");
+                // Construct payload with avatar_id and style as STRING (not object)
+                var payload = new
+                {
+                    avatar_id = avatarId.ToString(),
+                    style = styleJson  // Keep as string
+                };
 
-                ApiClient.Get().UpdateUserProfile(avatarId, json,
+                // Serialize the payload
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(payload);
+
+                // Use avatarId (product ID) as the key instead of name
+                string key = avatarId.ToString();
+
+                Debug.Log($"[CharacterCreator] ========== SAVE CHARACTER ==========");
+                Debug.Log($"[CharacterCreator] Product ID (Key): {key}");
+                Debug.Log($"[CharacterCreator] Character Name: {name}");
+                Debug.Log($"[CharacterCreator] API Endpoint: /user/profile/update/{key}");
+                Debug.Log($"[CharacterCreator] Payload: {json}");
+                Debug.Log($"[CharacterCreator] Style JSON Length: {styleJson.Length} characters");
+                Debug.Log($"[CharacterCreator] =====================================");
+
+                ApiClient.Get().UpdateProfileData(key, json,
                     (res) =>
                     {
-                        Debug.Log("Profile updated successfully via API");
+                        Debug.Log($"[CharacterCreator] ✓ Profile updated successfully for Product ID '{key}'");
                         onComplete?.Invoke();
                     },
                     (err) =>
                     {
-                        Debug.LogError($"Failed to update profile: {err}");
+                        Debug.LogError($"[CharacterCreator] ✗ Failed to update profile for Product ID '{key}': {err}");
                         onComplete?.Invoke();
                     });
             }
@@ -582,7 +603,7 @@ namespace Bozo.ModularCharacters
         }
 
         [Serializable]
-        private class CharacterSaveData
+        public class CharacterSaveData
         {
             public string characterName;
             public List<string> bodyIDs;

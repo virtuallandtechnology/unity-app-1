@@ -15,6 +15,8 @@ public class ShopItemUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _toggleText;
     [SerializeField] private GameObject _ownedIndicator;
     [SerializeField] private Button _view3DButton;
+    [SerializeField] private Canvas _canvasShop;
+    [SerializeField] private Button _previewButton;
 
     private ApiClient.ShopProduct _data;
     private bool _isInventoryMode;
@@ -28,6 +30,18 @@ public class ShopItemUI : MonoBehaviour
         {
             Directory.CreateDirectory(CustomCacheFolder);
         }
+
+        // Try to find canvas if not assigned
+        if (_canvasShop == null)
+        {
+            var canvasGO = GameObject.Find("CanvasMain");
+            if (canvasGO != null)
+            {
+                _canvasShop = canvasGO.GetComponent<Canvas>();
+            }
+            _previewButton = GameObject.Find("Button back editor")?.GetComponent<Button>();
+        }
+
     }
 
     public void Setup(ApiClient.ShopProduct product, bool isInventory, string categorySlug)
@@ -35,7 +49,15 @@ public class ShopItemUI : MonoBehaviour
         _data = product;
         _isInventoryMode = isInventory;
         _categorySlug = categorySlug;
-
+        _previewButton.onClick.AddListener(() =>
+                {
+                    // Re-enable canvas when exiting preview
+                    if (_canvasShop != null)
+                    {
+                        _canvasShop.enabled = true;
+                        Debug.Log("[ShopItemUI] Canvas Shop re-enabled");
+                    }
+                });
         if (_titleText) _titleText.text = product.title;
 
         _actionToggle.onValueChanged.RemoveAllListeners();
@@ -47,7 +69,14 @@ public class ShopItemUI : MonoBehaviour
             _view3DButton.onClick.AddListener(() =>
             {
                 Debug.Log($"[ShopItemUI] Opening preview for: {_categorySlug} (ID: {product.id})");
-                
+
+                // Disable canvas when opening preview
+                if (_canvasShop != null)
+                {
+                    _canvasShop.enabled = false;
+                    Debug.Log("[ShopItemUI] Canvas Shop disabled");
+                }
+
                 var loader = Game.Shop.Preview.ProductPreviewLoader.Instance;
                 if (loader != null)
                 {

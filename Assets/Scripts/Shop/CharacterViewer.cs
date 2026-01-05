@@ -27,6 +27,23 @@ namespace Game.Shop.Visuals
         private ApiClient.ShopProduct _currentProduct;
         private CharacterData _currentCustomization;
 
+        private void Awake()
+        {
+            // When instantiated from prefab, find CharacterCreator in scene
+            if (_characterCreator == null)
+            {
+                _characterCreator = FindObjectOfType<CharacterCreator>();
+                if (_characterCreator != null)
+                {
+                    Debug.Log("[CharacterViewer] Found CharacterCreator in scene");
+                }
+                else
+                {
+                    Debug.LogWarning("[CharacterViewer] CharacterCreator not found in scene!");
+                }
+            }
+        }
+
         public CharacterCreator GetCharacterCreator()
         {
             return _characterCreator;
@@ -38,6 +55,7 @@ namespace Game.Shop.Visuals
             this.gameObject.SetActive(true); // Ensure the viewer itself is active
             _viewerRoot.SetActive(true);
         }
+        
         public void LoadModel()
         {
             // Clear existing character
@@ -51,6 +69,7 @@ namespace Game.Shop.Visuals
             _characterCreator.ReplaceCharacter(_currentCharacter);
             _currentCharacter.transform.localPosition = Vector3.zero;
             _currentCharacter.transform.localRotation = Quaternion.identity;
+            
             // Load default or saved customization
             if (_currentCustomization != null)
             {

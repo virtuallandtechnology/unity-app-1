@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Game.Shop.Preview
 {
@@ -34,7 +35,7 @@ namespace Game.Shop.Preview
                 return null;
             }
 
-            // Check if already instantiated
+            // Check if already instantiated/cached
             if (_instantiatedWidgets.TryGetValue(widgetConfig.widgetId, out var existingWidget))
             {
                 if (_config.enableDebugLogs)
@@ -42,7 +43,17 @@ namespace Game.Shop.Preview
                 return existingWidget;
             }
 
-            // Instantiate new widget
+            // Try to find widget in scene first (don't instantiate)
+            var sceneWidget = FindWidgetInScene(widgetConfig.widgetId);
+            if (sceneWidget != null)
+            {
+                _instantiatedWidgets[widgetConfig.widgetId] = sceneWidget;
+                if (_config.enableDebugLogs)
+                    Debug.Log($"[ProductPreviewRegistry] Found widget in scene: {widgetConfig.widgetId}");
+                return sceneWidget;
+            }
+
+            // If not found in scene, instantiate from prefab as fallback
             var newWidget = InstantiateWidget(widgetConfig);
             if (newWidget != null)
             {
@@ -52,6 +63,24 @@ namespace Game.Shop.Preview
             }
 
             return newWidget;
+        }
+
+        private IProductPreviewWidget FindWidgetInScene(string widgetId)
+        {
+            // Find all widgets in scene
+            var allWidgets = Object.FindObjectsOfType<MonoBehaviour>()
+                .OfType<IProductPreviewWidget>()
+                .ToArray();
+
+            foreach (var widget in allWidgets)
+            {
+                if (widget.WidgetId == widgetId)
+                {
+                    return widget;
+                }
+            }
+
+            return null;
         }
 
         private IProductPreviewWidget InstantiateWidget(PreviewWidgetConfig config)

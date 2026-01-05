@@ -109,8 +109,8 @@ namespace VirtualLand
             }
 
             _currentCategoryIndex = 0;
-            UpdateEditorUI();
             canvasShop.enabled = false;
+            UpdateEditorUI();
         }
 
         /// <summary>

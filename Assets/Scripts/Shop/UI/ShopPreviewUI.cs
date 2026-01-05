@@ -189,7 +189,17 @@ namespace Game.Shop.UI
             if (_saveButton) _saveButton.interactable = false;
             ShowFeedback("Saving...");
 
-            ApiClient.Get().UpdateUserProfile(product.id, styleJson,
+            // Construct payload with avatar_id and style object
+            var payload = new
+            {
+                avatar_id = product.id.ToString(),
+                style = Newtonsoft.Json.JsonConvert.DeserializeObject(styleJson)
+            };
+            
+            string payloadJson = Newtonsoft.Json.JsonConvert.SerializeObject(payload);
+            string key = product.title;
+
+            ApiClient.Get().UpdateProfileData(key, payloadJson,
                 (response) =>
                 {
                     ShowFeedback("Profile Updated Successfully!");

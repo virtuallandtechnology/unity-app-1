@@ -104,6 +104,9 @@ namespace VirtualLand
         /// <summary>
         /// Load main character from PlayerPrefs
         /// </summary>
+        /// <summary>
+        /// Load main character from PlayerPrefs
+        /// </summary>
         private void LoadMainCharacterFromPrefs()
         {
             if (PlayerPrefs.HasKey(MAIN_CHARACTER_ID_KEY))
@@ -113,10 +116,67 @@ namespace VirtualLand
                 {
                     _mainCharacterStyle = PlayerPrefs.GetString(MAIN_CHARACTER_STYLE_KEY);
                 }
+                
+                // Load product to get the name
+                if (PlayerPrefs.HasKey("MainCharacterProduct"))
+                {
+                    string json = PlayerPrefs.GetString("MainCharacterProduct");
+                    try 
+                    {
+                        var product = JsonUtility.FromJson<ShopProduct>(json);
+                        if (product != null)
+                        {
+                            _mainCharacterProduct = product;
+                            // Now fetch the latest style from server for this character
+                            FetchCharacterDataFromServer(product.title);
+                        }
+                    }
+                    catch {}
+                }
+                
                 Debug.Log($"[MainCharacterManager] Loaded main character ID from prefs: {_mainCharacterId}");
             }
         }
 
+        private void FetchCharacterDataFromServer(string characterName)
+        {
+            if (string.IsNullOrEmpty(characterName)) return;
+
+            Debug.Log($"[MainCharacterManager] Fetching data for: {characterName}");
+            ApiClient.Get().GetProfileData(characterName,
+                (response) =>
+                {
+                    if (response.isSuccess && response.result != null)
+                    {
+                        // Extract style and update
+                        string styleJson = "";
+                        if (response.result.style != null)
+                        {
+                            if (response.result.style is string strStyle)
+                                styleJson = strStyle;
+                            else
+                                styleJson = Newtonsoft.Json.JsonConvert.SerializeObject(response.result.style);
+                            
+                            // Update local style
+                            _mainCharacterStyle = styleJson;
+                            PlayerPrefs.SetString(MAIN_CHARACTER_STYLE_KEY, _mainCharacterStyle);
+                            PlayerPrefs.Save();
+                            
+                            // Notify listeners
+                            OnMainCharacterChanged?.Invoke(_mainCharacterId);
+                            Debug.Log($"[MainCharacterManager] Updated style from server for {characterName}");
+                        }
+                    }
+                },
+                (error) =>
+                {
+                    Debug.LogWarning($"[MainCharacterManager] Failed to fetch data for {characterName}: {error}");
+                });
+        }
+
+        /// <summary>
+        /// Save main character to API profile
+        /// </summary>
         /// <summary>
         /// Save main character to API profile
         /// </summary>
@@ -146,8 +206,13 @@ namespace VirtualLand
 
             string jsonPayload = Newtonsoft.Json.JsonConvert.SerializeObject(payload);
 
-            // Use the fixed object name for update
-            string currentKey = PROFILE_OBJECT_NAME;
+            // Use the character title as the key if available, otherwise fallback to ID or default
+            string currentKey = _mainCharacterProduct != null ? _mainCharacterProduct.title : _mainCharacterId.ToString();
+            
+            // Should ensure we don't have empty key
+            if (string.IsNullOrEmpty(currentKey)) currentKey = "UnknownCharacter";
+
+            Debug.Log($"[MainCharacterManager] Saving profile for key: {currentKey}");
 
             ApiClient.Get().UpdateProfileData(currentKey, jsonPayload,
                 (response) =>
@@ -155,11 +220,11 @@ namespace VirtualLand
                     Debug.Log($"[MainCharacterManager] Profile saved successfully to {currentKey}");
                     
                     // Update local version timestamp if server provided one (for sync checks)
-                    if (response.timestamp > 0)
+                    if (response.result != null) // UpdateProfileData returns object, checking if we can get timestamp might need parsing
                     {
-                        PlayerPrefs.SetString(PROFILE_VERSION_PREF, response.timestamp.ToString());
+                        // The UpdateProfileData response might not have timestamp structure in generic object
+                        // But typically we update local state anyway
                     }
-                    PlayerPrefs.Save();
                 },
                 (error) =>
                 {
@@ -274,6 +339,9 @@ namespace VirtualLand
         /// <summary>
         /// Get main character product from API if not loaded
         /// </summary>
+        /// <summary>
+        /// Get main character product from API if not loaded
+        /// </summary>
         public void LoadMainCharacterProduct(Action<ShopProduct> onSuccess, Action<string> onFail)
         {
             if (_mainCharacterId <= 0)
@@ -300,8 +368,9 @@ namespace VirtualLand
                     {
                         _mainCharacterProduct = cachedProduct;
                         Debug.Log("[MainCharacterManager] Loaded main character from cache");
+                        // Even if cached, we might want to refresh, but for now cache is fine
                         onSuccess?.Invoke(_mainCharacterProduct);
-                        return; // Return early if cache hit
+                        return;
                     }
                 }
                 catch (Exception e)
@@ -310,36 +379,54 @@ namespace VirtualLand
                 }
             }
 
-            // Load from API via GetPurchasedProducts (since GetProductById is unreliable for user products)
-            ApiClient.Get().GetPurchasedProducts("Characters",
+            // Load from API using GetProductById which is faster/direct for getting Title
+            ApiClient.Get().GetProductById(_mainCharacterId,
                 (response) =>
                 {
                     if (response.isSuccess && response.result != null)
                     {
-                        var product = response.result.Find(p => p.product.id == _mainCharacterId);
-                        if (product != null && product.product != null)
-                        {
-                            _mainCharacterProduct = product.product;
-                            
-                            // Cache the new product
-                            string newJson = JsonUtility.ToJson(_mainCharacterProduct);
-                            PlayerPrefs.SetString("MainCharacterProduct", newJson);
+                        _mainCharacterProduct = response.result;
+                        
+                        // Cache the new product
+                        string newJson = JsonUtility.ToJson(_mainCharacterProduct);
+                        PlayerPrefs.SetString("MainCharacterProduct", newJson);
 
-                            onSuccess?.Invoke(_mainCharacterProduct);
-                        }
-                        else
-                        {
-                            onFail?.Invoke($"Main character (ID: {_mainCharacterId}) not found in purchased characters");
-                        }
+                        onSuccess?.Invoke(_mainCharacterProduct);
                     }
                     else
                     {
-                        onFail?.Invoke("Failed to load purchased characters to find main character");
+                        onFail?.Invoke($"Failed to find main character (ID: {_mainCharacterId})");
                     }
                 },
                 (error) =>
                 {
                     onFail?.Invoke(error);
+                });
+        }
+        
+        /// <summary>
+        /// Sync main character from Login/Refresh sequence
+        /// Sets ID, then fetches Product (for name), then fetches Data (for style)
+        /// </summary>
+        public void SyncMainCharacterFromLogin(int avatarId)
+        {
+            if (avatarId <= 0) return;
+
+            Debug.Log($"[MainCharacterManager] Syncing from login for Avatar ID: {avatarId}");
+            _mainCharacterId = avatarId;
+            PlayerPrefs.SetInt(MAIN_CHARACTER_ID_KEY, _mainCharacterId);
+            PlayerPrefs.Save();
+
+            // 1. Load Product to get Name
+            LoadMainCharacterProduct(
+                (product) =>
+                {
+                    // 2. Fetch Data using Name
+                    FetchCharacterDataFromServer(product.title);
+                },
+                (error) =>
+                {
+                    Debug.LogError($"[MainCharacterManager] Failed to sync from login: {error}");
                 });
         }
 

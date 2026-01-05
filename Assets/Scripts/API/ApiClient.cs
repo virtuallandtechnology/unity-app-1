@@ -557,7 +557,8 @@ public partial class ApiClient
                         {
                             if (int.TryParse(profile.avatar_id, out int avatarId))
                             {
-                                VirtualLand.MainCharacterManager.Instance.SyncFromProfile(avatarId, profile.style);
+                                // Fetch fresh data from dynamic endpoint instead of using profile.style
+                                VirtualLand.MainCharacterManager.Instance.SyncMainCharacterFromLogin(avatarId);
                             }
                         }
                     }
@@ -605,7 +606,8 @@ public partial class ApiClient
                             {
                                 if (int.TryParse(profile.avatar_id, out int avatarId))
                                 {
-                                    VirtualLand.MainCharacterManager.Instance.SyncFromProfile(avatarId, profile.style);
+                                    // Fetch fresh data from dynamic endpoint instead of using profile.style
+                                    VirtualLand.MainCharacterManager.Instance.SyncMainCharacterFromLogin(avatarId);
                                 }
                             }
                         }

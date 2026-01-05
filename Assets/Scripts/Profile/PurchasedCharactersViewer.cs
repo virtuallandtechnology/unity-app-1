@@ -282,7 +282,20 @@ namespace VirtualLand
             if (_saveButton != null) _saveButton.interactable = false;
             ShowFeedback("Saving...");
 
-            ApiClient.Get().UpdateUserProfile(_currentCharacterProduct.id, json,
+            // Construct style object/json
+            // We want to wrap it in avatar_id and style if that's what the endpoint expects
+            // Based on user screenshot, the response has "result": { "style": {...}, "avatar_id": "3" }
+            // So we should probably send the same structure
+            var payload = new
+            {
+                avatar_id = _currentCharacterProduct.id.ToString(),
+                style = Newtonsoft.Json.JsonConvert.DeserializeObject(json) // Deserialize to object so it serializes as object, not string
+            };
+            
+            string payloadJson = Newtonsoft.Json.JsonConvert.SerializeObject(payload);
+            string key = _currentCharacterProduct.title;
+
+            ApiClient.Get().UpdateProfileData(key, payloadJson,
                 (response) =>
                 {
                     ShowFeedback("Character saved successfully!");
