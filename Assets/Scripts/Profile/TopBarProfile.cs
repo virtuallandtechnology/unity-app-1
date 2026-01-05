@@ -19,7 +19,13 @@ public class TopBarProfile : MonoBehaviour
         //}
         Username.text = GetPlayer().GetUsername();
         if ((ApiClient.GetPlayer().profile != null))
-            Avatar.sprite = AvatarsConfig.Instance.Avatars[ApiClient.GetPlayer().profile.avatar_id].sprite;
+        {
+            if (int.TryParse(ApiClient.GetPlayer().profile.avatar_id, out int avatarId))
+            {
+                if (avatarId >= 0 && avatarId < AvatarsConfig.Instance.Avatars.Count)
+                    Avatar.sprite = AvatarsConfig.Instance.Avatars[avatarId].sprite;
+            }
+        }
         _ = showDelay();
 
     }

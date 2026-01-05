@@ -12,7 +12,7 @@ namespace VirtualLand
         [SerializeField] private TMP_InputField _loginusername;
         [SerializeField] private TMP_InputField _loginpassword;
         [SerializeField] private GameObject LoginePopup;
-        public Action LoginAction;
+        public Action<ApiClient.User> LoginAction;
 
         public override void Show()
         {
@@ -40,6 +40,8 @@ namespace VirtualLand
         private void OnFail(string obj)
         {
             print(obj);
+            LoadingHandler.Get().SetVisible(false);
+            NotificationController.Get().Show(obj);
         }
 
         private void OnSuccess(ApiResponse<UserData> response)
@@ -51,9 +53,13 @@ namespace VirtualLand
             PlayerPrefs.SetString("username", response.result.user.profile.nickname);
             string token = response.result.token;
             PlayerPrefs.SetString("token", token);
-            LoginAction.Invoke();
+            
+            // Pass the user object to the bootstrap controller
+            LoginAction?.Invoke(response.result.user);
+            
             LoginePopup.SetActive(false);
-            ApiClient.Get().RequestWalletsUpdate();
+            // RequestWalletsUpdate is now handled in ProceedToHome
+            // ApiClient.Get().RequestWalletsUpdate();
         }
     }
 }

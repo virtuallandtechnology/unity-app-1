@@ -196,15 +196,16 @@ namespace VirtualLand
 
                 if (user.profile != null)
                 {
-                    _currentProfileID = user.profile.avatar_id;
-                    
-                    // Sync main character selection
-                    if (MainCharacterManager.Instance != null && _currentProfileID > 0)
+                    if (int.TryParse(user.profile.avatar_id, out _currentProfileID))
                     {
-                        MainCharacterManager.Instance.SyncMainCharacterId(_currentProfileID);
-                    }
+                        // Sync main character selection
+                        if (MainCharacterManager.Instance != null && _currentProfileID > 0)
+                        {
+                            MainCharacterManager.Instance.SyncMainCharacterId(_currentProfileID);
+                        }
 
-                    UpdateAllImages(_currentProfileID);
+                        UpdateAllImages(_currentProfileID);
+                    }
                 }
             }
         }
@@ -237,7 +238,7 @@ namespace VirtualLand
         {
             var currentprofile = new ApiClient.Profile();
 
-            currentprofile.avatar_id = _currentProfileID;
+            currentprofile.avatar_id = _currentProfileID.ToString();
 
             ApiClient.Get().UpdateProfile(currentprofile, onUpdateSuccess, OnFail);
         }

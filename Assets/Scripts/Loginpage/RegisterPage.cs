@@ -12,7 +12,7 @@ public class RegisterPage : BootStrapBasePanel
     [SerializeField] private TMP_InputField _password1;
     [SerializeField] private TMP_InputField _password2;
     [SerializeField] private GameObject Home;
-    public Action<string> RegisterAction;
+    public Action<ApiClient.User> RegisterAction;
 
 
     public void Register()
@@ -54,7 +54,20 @@ public class RegisterPage : BootStrapBasePanel
         //Debug.Log(response.result.user.profile.nickname + " FFFFFFFFFFFFFFFFFFFFFFFFFFF");
         PlayerPrefs.SetString("username", _name.text);
         _root.SetActive(false);
-        Home.SetActive(true);
-        RegisterAction.Invoke(token);
+        // Home activation is now handled by BootStrapController via RegisterAction
+        // Home.SetActive(true);
+        
+        // Construct a basic user object since Register response might be limited or we want to pass specific data
+        // Check if response.result.user is null, if so create one
+        var user = response.result.user;
+        if (user == null)
+        {
+            user = new User();
+            user.username = _name.text;
+            user.email = _email.text;
+            // Avatar might define a default
+        }
+        
+        RegisterAction?.Invoke(user);
     }
 }

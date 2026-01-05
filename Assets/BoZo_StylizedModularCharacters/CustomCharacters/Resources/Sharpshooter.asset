@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b3877dcf418d2a54fbcdcc9f282d8496, type: 3}
-  m_Name: Street Rookie
+  m_Name: Sharpshooter
   m_EditorClassIdentifier: Assembly-CSharp::Bozo.ModularCharacters.CharacterObject
-  icon: {fileID: 2800000, guid: 9c1b2bc27767fdd4eb0991001fb8658a, type: 3}
+  icon: {fileID: 2800000, guid: 0c69468d39ffa814db14b42ec4a797a6, type: 3}
   data:
-    characterName: Street Rookie
+    characterName: Sharpshooter
     bodyIDs:
     - BodyType
     - Chest
@@ -122,11 +122,11 @@ MonoBehaviour:
     outfitDatas:
     - outfit: Body/Body_BasicBody
       colors:
-      - {r: 0.6698113, g: 0.43316543, b: 0.33174583, a: 0}
-      - {r: 0.3962261, g: 0, b: 0, a: 0}
-      - {r: 0.43396196, g: 0.05007238, b: 0, a: 0}
-      - {r: 0.10062858, g: 0.10062858, b: 0.10062858, a: 0}
-      - {r: 0.049999803, g: 0.049999803, b: 0.049999803, a: 0}
+      - {r: 0.6698113, g: 0.4331657, b: 0.33174613, a: 0}
+      - {r: 0.39622638, g: 0, b: 0, a: 0}
+      - {r: 0.43396226, g: 0.05007256, b: 0, a: 0}
+      - {r: 0.10062883, g: 0.10062883, b: 0.10062883, a: 0}
+      - {r: 0.049999982, g: 0.049999982, b: 0.049999982, a: 0}
       - {r: 1, g: 1, b: 1, a: 0}
       - {r: 1, g: 1, b: 1, a: 0}
       - {r: 0.5, g: 0.5, b: 0.5, a: 0}
@@ -138,17 +138,17 @@ MonoBehaviour:
       patternColors:
       - {r: 0.8742138, g: 0.8742138, b: 0.8742138, a: 0}
       - {r: 0.6981132, g: 0.6981132, b: 0.6981132, a: 0}
-      - {r: 0.44968516, g: 0.7604513, b: 1, a: 0}
+      - {r: 0.4496854, g: 0.7604513, b: 1, a: 0}
       patternScale: {x: 1, y: 1, z: 0, w: 0}
       color: {r: 1, g: 1, b: 1, a: 1}
       swatch: 0
-    - outfit: Head/Head_YoungSharpHead
+    - outfit: Head/Head_BasicHead
       colors:
-      - {r: 0.6698113, g: 0.43316543, b: 0.33174583, a: 0}
-      - {r: 0.3962261, g: 0, b: 0, a: 0}
-      - {r: 0.43396196, g: 0.05007238, b: 0, a: 0}
-      - {r: 0.10062858, g: 0.10062858, b: 0.10062858, a: 0}
-      - {r: 0.049999803, g: 0.049999803, b: 0.049999803, a: 0}
+      - {r: 0.6698113, g: 0.4331657, b: 0.33174613, a: 0}
+      - {r: 0.39622638, g: 0, b: 0, a: 0}
+      - {r: 0.43396226, g: 0.05007256, b: 0, a: 0}
+      - {r: 0.10062883, g: 0.10062883, b: 0.10062883, a: 0}
+      - {r: 0.049999982, g: 0.049999982, b: 0.049999982, a: 0}
       - {r: 1, g: 1, b: 1, a: 0}
       - {r: 1, g: 1, b: 1, a: 0}
       - {r: 0.5, g: 0.5, b: 0.5, a: 0}
@@ -160,13 +160,13 @@ MonoBehaviour:
       patternColors:
       - {r: 0.8742138, g: 0.8742138, b: 0.8742138, a: 0}
       - {r: 0.6981132, g: 0.6981132, b: 0.6981132, a: 0}
-      - {r: 0.44968516, g: 0.7604513, b: 1, a: 0}
+      - {r: 0.4496854, g: 0.7604513, b: 1, a: 0}
       patternScale: {x: 1, y: 1, z: 0, w: 0}
       color: {r: 1, g: 1, b: 1, a: 1}
       swatch: 0
     - outfit: Eyes/Eyes_BasicEyes
       colors:
-      - {r: 1, g: 1, b: 1, a: 1}
+      - {r: 1, g: 1, b: 1, a: 0}
       - {r: 0.72955966, g: 0, b: 0.025749467, a: 0}
       - {r: 0, g: 0, b: 1, a: 0}
       - {r: 1, g: 0, b: 0.9240179, a: 0}
@@ -184,8 +184,8 @@ MonoBehaviour:
       pattern: Pattern/Pattern_BasicIris
       patternColors:
       - {r: 0, g: 0, b: 0, a: 0}
-      - {r: 0.31446502, g: 0.14430913, b: 0, a: 0}
-      - {r: 1, g: 0.46448034, b: 0, a: 0}
+      - {r: 0.3144653, g: 0.1443094, b: 0, a: 0}
+      - {r: 1, g: 0.46448064, b: 0, a: 0}
       patternScale: {x: 1, y: 1, z: 0, w: 0}
       color: {r: 1, g: 1, b: 1, a: 1}
       swatch: 0
@@ -208,11 +208,11 @@ MonoBehaviour:
       patternScale: {x: 0, y: 0, z: 0, w: 0}
       color: {r: 1, g: 1, b: 1, a: 1}
       swatch: 0
-    - outfit: Hat/BSMC_Hat_SunHat
+    - outfit: HairFront/BSMC_HairFront_QuicklyHair
       colors:
-      - {r: 1, g: 0.7990155, b: 0.53773564, a: 1}
-      - {r: 0.9622641, g: 0.3315692, b: 0.19668895, a: 0}
-      - {r: 0.9433962, g: 0.635381, b: 0.40049803, a: 0}
+      - {r: 0.25471693, g: 0.25471693, b: 0.25471693, a: 1}
+      - {r: 0.4386792, g: 0.4386792, b: 0.4386792, a: 0}
+      - {r: 0, g: 0, b: 0, a: 0}
       - {r: 0, g: 0, b: 0, a: 0}
       - {r: 0, g: 0, b: 0, a: 0}
       - {r: 0, g: 0, b: 0, a: 0}
@@ -227,10 +227,48 @@ MonoBehaviour:
       patternScale: {x: 0, y: 0, z: 0, w: 0}
       color: {r: 1, g: 1, b: 1, a: 1}
       swatch: 0
+    - outfit: HairBack/BSMC_HairBack_Scrappy
+      colors:
+      - {r: 0.25882348, g: 0.25882348, b: 0.25882348, a: 1}
+      - {r: 0.36320746, g: 0.36320746, b: 0.36320746, a: 1}
+      - {r: 0, g: 0, b: 0, a: 0}
+      - {r: 0, g: 0, b: 0, a: 0}
+      - {r: 0, g: 0, b: 0, a: 0}
+      - {r: 0, g: 0, b: 0, a: 0}
+      - {r: 1, g: 1, b: 1, a: 0}
+      - {r: 0.5, g: 0.5, b: 0.5, a: 0}
+      - {r: 0, g: 0, b: 0, a: 0}
+      decal: 
+      decalColors: []
+      decalScale: {x: 0, y: 0, z: 0, w: 0}
+      pattern: 
+      patternColors: []
+      patternScale: {x: 0, y: 0, z: 0, w: 0}
+      color: {r: 1, g: 1, b: 1, a: 1}
+      swatch: 0
+    - outfit: Gloves/Gloves_ArmWarmers
+      colors:
+      - {r: 0.38993698, g: 0.38993698, b: 0.38993698, a: 1}
+      - {r: 0.72327036, g: 0.72327036, b: 0.72327036, a: 0}
+      - {r: 0, g: 0, b: 1, a: 0}
+      - {r: 1, g: 0, b: 0.9240179, a: 0}
+      - {r: 0.9695323, g: 1, b: 0, a: 0}
+      - {r: 0, g: 0.8895352, b: 1, a: 0}
+      - {r: 1, g: 1, b: 1, a: 0}
+      - {r: 0.5, g: 0.5, b: 0.5, a: 0}
+      - {r: 0, g: 0, b: 0, a: 0}
+      decal: 
+      decalColors: []
+      decalScale: {x: 0, y: 0, z: 0, w: 0}
+      pattern: 
+      patternColors: []
+      patternScale: {x: 0, y: 0, z: 0, w: 0}
+      color: {r: 1, g: 1, b: 1, a: 1}
+      swatch: 0
     - outfit: Top/BSMC_Top_SeifukuShort
       colors:
       - {r: 0.8301887, g: 0.8301887, b: 0.8301887, a: 1}
-      - {r: 0.30199036, g: 0.28865525, b: 0.6603774, a: 1}
+      - {r: 0.30199054, g: 0.28865543, b: 0.6603774, a: 1}
       - {r: 0.7610062, g: 0.02853502, b: 0, a: 1}
       - {r: 0, g: 0, b: 0, a: 0}
       - {r: 1, g: 1, b: 1, a: 1}

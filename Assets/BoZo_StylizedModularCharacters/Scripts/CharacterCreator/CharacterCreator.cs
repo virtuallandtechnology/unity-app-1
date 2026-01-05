@@ -108,6 +108,8 @@ namespace Bozo.ModularCharacters
             GetBodyMods();
             SwitchCatagory("Top");
 
+            // Log the save path to find where files are stored locally
+            Debug.Log($"[CharacterCreator] Local Save Path: {BMAC_SaveSystem.filePath}");
             UpdateCharacterSaves();
 
         }
@@ -562,7 +564,7 @@ namespace Bozo.ModularCharacters
         {
             if (character == null) return;
             loadedCharacterNameText.text = data.characterName;
-            BMAC_SaveSystem.LoadCharacter(character, data);
+            _ = BMAC_SaveSystem.LoadCharacter(character, data);
         }
 
         public void DeleteCharacter()

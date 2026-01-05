@@ -33,6 +33,7 @@ public partial class ApiClient
         public T result;
         public int code;
         public object errors;
+        public double timestamp;
     }
 
     [Serializable]
@@ -291,7 +292,7 @@ public partial class ApiClient
     private void HandleResponse<T>(HTTPRequest request, HTTPResponse response,
         Action<ApiResponse<T>> onSuccess, Action<string> onFail)
     {
-        if (request.State == HTTPRequestStates.Finished && response.IsSuccess)
+        if (request.State == HTTPRequestStates.Finished && response != null && response.IsSuccess)
         {
             try
             {
@@ -303,12 +304,28 @@ public partial class ApiClient
             }
             catch (Exception ex)
             {
+                Debug.LogError($"[ApiClient] Parse Error for {request.Uri}: {ex.Message}\nData: {response.DataAsText}");
                 onFail?.Invoke("Parse Error: " + ex.Message);
             }
         }
         else
         {
-            onFail?.Invoke("Network Error or Request Failed");
+            string error = "Request Failed";
+            if (response != null)
+            {
+                error = $"Server Error: {response.StatusCode} {response.Message}";
+                if (response.StatusCode == 401)
+                {
+                    Debug.LogWarning($"[ApiClient] Unauthorized (401) for {request.Uri}. Token might be expired.");
+                    onFail?.Invoke(error);
+                    return;
+                }
+            }
+            else if (request.State != HTTPRequestStates.Finished)
+                error = $"Network Error: {request.State}";
+
+            Debug.LogError($"[ApiClient] {error} for {request.Uri}");
+            onFail?.Invoke(error);
         }
     }
 
@@ -339,7 +356,7 @@ public partial class ApiClient
     public void ProfileInfo(string token,
       Action<ApiResponse<User>> onSuccess, Action<string> onFail)
     {
-        string url = GameConfig.Instance.BaseURL + "/user/profile/info";
+        string url = GameConfig.Instance.BaseURL.TrimEnd('/') + "/user/profile/get";
 
         var request = new HTTPRequest(new System.Uri(url), HTTPMethods.Get,
             (req, resp) => HandleResponse<User>(req, resp, (ApiResponse<User> t) =>
@@ -373,12 +390,68 @@ public partial class ApiClient
         public string force_update { get; set; }
     }
 
+    [Serializable]
+    public class ConfigItem
+    {
+        public string key;
+        public VERSIONINFO value;
+        public string type;
+    }
+
     public void GetServerConfig(Action<ApiResponse<Result>> onSuccess, Action<string> onFail)
     {
-        string url = "https://soccer.ecogamecenter.net/api/configs/indexed";
+        string url = $"{GameConfig.Instance.BaseURL.TrimEnd('/')}/configs";
 
         var request = new HTTPRequest(new System.Uri(url), HTTPMethods.Get,
-            (req, resp) => HandleResponse<Result>(req, resp, onSuccess, onFail));
+            (req, resp) =>
+            {
+                if (req.State != HTTPRequestStates.Finished || resp == null || !resp.IsSuccess)
+                {
+                    HandleResponse<Result>(req, resp, onSuccess, onFail); // Let the standard handler report network/server errors
+                    return;
+                }
+
+                try
+                {
+                    // The new response has a 'result' that is an array.
+                    var apiResponse = JsonConvert.DeserializeObject<ApiResponse<List<ConfigItem>>>(resp.DataAsText);
+                    if (apiResponse.isSuccess && apiResponse.result != null)
+                    {
+                        // Find the config item with the key "VERSION_INFO"
+                        ConfigItem versionInfoItem = apiResponse.result.Find(item => item.key == "VERSION_INFO");
+
+                        if (versionInfoItem != null && versionInfoItem.value != null)
+                        {
+                            // Construct the old `Result` object that the rest of the app expects.
+                            var finalResult = new Result { VERSION_INFO = versionInfoItem.value };
+
+                            // Create a new ApiResponse to pass to the original onSuccess callback.
+                            var finalResponse = new ApiResponse<Result>
+                            {
+                                isSuccess = true,
+                                message = apiResponse.message,
+                                result = finalResult,
+                                code = apiResponse.code,
+                                timestamp = apiResponse.timestamp
+                            };
+                            onSuccess?.Invoke(finalResponse);
+                        }
+                        else
+                        {
+                            onFail?.Invoke("VERSION_INFO key not found in /configs response.");
+                        }
+                    }
+                    else
+                    {
+                        onFail?.Invoke(apiResponse.message ?? "Failed to get server config from /configs.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[ApiClient] Parse Error for {req.Uri}: {ex.Message}\nData: {resp.DataAsText}");
+                    onFail?.Invoke("Parse Error: " + ex.Message);
+                }
+            });
         request.AddHeader("Accept", "application/json");
 
         request.Send();
@@ -416,23 +489,46 @@ public partial class ApiClient
             return;
         }
 
-        string url = GameConfig.Instance.BaseURL + "/user/profile/info";
-
-        var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
-            (req, resp) => HandleResponse<User>(req, resp, (ApiResponse<User> response) =>
+        // Use the dynamic endpoint to get profile data
+        string key = PlayerPrefs.GetString("CurrentProfileKey", "var1");
+        GetProfileData(key,
+            (response) =>
             {
-                if (response.result != null)
+                if (response.isSuccess && response.result != null)
                 {
-                    Setplayer(response.result);
+                    // Construct a User object with the profile data
+                    var user = new User();
+                    user.profile = new Profile();
+
+                    if (response.result.style != null)
+                    {
+                        if (response.result.style is string strStyle)
+                            user.profile.style = strStyle;
+                        else
+                            user.profile.style = Newtonsoft.Json.JsonConvert.SerializeObject(response.result.style);
+                    }
+
+                    user.profile.avatar_id = response.result.avatar_id;
+
+                    // We don't have username/email from this endpoint, but BootStrap might need a non-null User
+                    // Set basic info if stored
+                    user.username = PlayerPrefs.GetString("username", "User");
+
+                    var userResponse = new ApiResponse<User>();
+                    userResponse.isSuccess = true;
+                    userResponse.code = 200;
+                    userResponse.message = "Profile loaded from var1";
+                    userResponse.result = user;
+
+                    Setplayer(user);
+                    onSuccess?.Invoke(userResponse);
                 }
-
-                onSuccess?.Invoke(response);
-            }, onFail));
-
-        request.AddHeader("Authorization", $"Bearer {token}");
-        request.AddHeader("Accept", "application/json");
-
-        request.Send();
+                else
+                {
+                    onFail?.Invoke(response.message);
+                }
+            },
+            onFail);
     }
 }
 
@@ -452,6 +548,20 @@ public partial class ApiClient
 
                     PlayerPrefs.SetString("token", response.result.token);
                     PlayerPrefs.SetString("username", response.result.user.GetUsername());
+
+                    // Sync character from profile if available
+                    if (response.result.user.profile != null)
+                    {
+                        var profile = response.result.user.profile;
+                        if (!string.IsNullOrEmpty(profile.avatar_id))
+                        {
+                            if (int.TryParse(profile.avatar_id, out int avatarId))
+                            {
+                                VirtualLand.MainCharacterManager.Instance.SyncFromProfile(avatarId, profile.style);
+                            }
+                        }
+                    }
+
                     PlayerPrefs.Save();
                 }
 
@@ -486,6 +596,19 @@ public partial class ApiClient
                     {
                         Setplayer(response.result.user);
                         PlayerPrefs.SetString("username", response.result.user.GetUsername());
+
+                        // Sync character from profile if available
+                        if (response.result.user.profile != null)
+                        {
+                            var profile = response.result.user.profile;
+                            if (!string.IsNullOrEmpty(profile.avatar_id))
+                            {
+                                if (int.TryParse(profile.avatar_id, out int avatarId))
+                                {
+                                    VirtualLand.MainCharacterManager.Instance.SyncFromProfile(avatarId, profile.style);
+                                }
+                            }
+                        }
                     }
 
                     PlayerPrefs.Save();
@@ -599,6 +722,72 @@ public partial class ApiClient
         }
     }
 
+    [Serializable]
+    public class ProfileDataResult
+    {
+        public object style;
+        public string avatar_id;
+        public double timestamp;
+    }
+
+    public void GetProfileVersion(string key, Action<ApiResponse<int>> onSuccess, Action<string> onFail)
+    {
+        string token = PlayerPrefs.GetString("token");
+        string url = $"{GameConfig.Instance.BaseURL.TrimEnd('/')}/user/profile/version/{key}";
+
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
+            (req, resp) => HandleResponse<int>(req, resp, onSuccess, onFail));
+
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.AddHeader("Accept", "application/json");
+        request.Send();
+    }
+
+    public void GetProfileData(string key, Action<ApiResponse<ProfileDataResult>> onSuccess, Action<string> onFail)
+    {
+        string token = PlayerPrefs.GetString("token").Trim();
+        string url = $"{GameConfig.Instance.BaseURL.TrimEnd('/')}/user/profile/get/{key}";
+
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
+            (req, resp) =>
+            {
+                // Fix: If data is not found (404), return empty result instead of error
+                if (resp != null && resp.StatusCode == 404)
+                {
+                    var res = new ApiResponse<ProfileDataResult>();
+                    res.isSuccess = true;
+                    res.result = new ProfileDataResult();
+                    onSuccess?.Invoke(res);
+                    return;
+                }
+                HandleResponse<ProfileDataResult>(req, resp, onSuccess, onFail);
+            });
+
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.AddHeader("Accept", "application/json");
+        request.Send();
+    }
+
+    public void UpdateProfileData(string key, string data, Action<ApiResponse<object>> onSuccess, Action<string> onFail)
+    {
+        string token = PlayerPrefs.GetString("token");
+        string url = $"{GameConfig.Instance.BaseURL.TrimEnd('/')}/user/profile/update/{key}";
+
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Post,
+            (req, resp) => HandleResponse<object>(req, resp, onSuccess, onFail));
+
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.AddHeader("Content-Type", "application/json");
+
+        // Assuming the API expects the raw data in a specific format or as body
+        // The user's update endpoint is user/profile/update/var1
+        // Usually these generic endpoints just take the payload
+        byte[] body = Encoding.UTF8.GetBytes(data);
+        request.UploadSettings.UploadStream = new System.IO.MemoryStream(body);
+
+        request.Send();
+    }
+
 
 
     public void UpdateUserProfile(int avatarId, string styleJson, Action<ApiResponse<object>> onSuccess, Action<string> onFail)
@@ -627,7 +816,8 @@ public partial class ApiClient
     [Serializable]
     public class Profile
     {
-        public int avatar_id { get; set; }
+        public string avatar_id { get; set; }
         public string nickname { get; set; }
+        public string style { get; set; }
     }
 }

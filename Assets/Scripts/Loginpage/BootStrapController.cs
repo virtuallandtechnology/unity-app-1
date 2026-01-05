@@ -52,14 +52,14 @@ public class BootStrapController : MonoBehaviour
 
     }
 
-    private void Login()
+    private void Login(ApiClient.User user)
     {
-        _userNameHome.text = PlayerPrefs.GetString("username");
+        ProceedToHome(user);
     }
 
-    private void Register(string obj)
+    private void Register(ApiClient.User user)
     {
-        _userNameHome.text = PlayerPrefs.GetString("username");
+        ProceedToHome(user);
     }
 
     public void Getverion()
@@ -165,16 +165,7 @@ public class BootStrapController : MonoBehaviour
     {
         if (AutoLogin && PlayerPrefs.HasKey("token"))
         {
-            ApiClient.Get().GetProfileInfo(
-                (response) =>
-                {
-                    ProceedToHome(response.result);
-                },
-                (fail) =>
-                {
-                    AttemptRefreshToken();
-                }
-            );
+            AttemptRefreshToken();
         }
         else
         {
@@ -229,10 +220,12 @@ public class BootStrapController : MonoBehaviour
 
             if (user.profile != null)
             {
-                int id = user.profile.avatar_id;
-                if (AvatarsConfig.Instance != null && id >= 0 && id < AvatarsConfig.Instance.Avatars.Count)
+                if (int.TryParse(user.profile.avatar_id, out int id))
                 {
-                    _avatarHome.sprite = AvatarsConfig.Instance.Avatars[id].sprite;
+                    if (AvatarsConfig.Instance != null && id >= 0 && id < AvatarsConfig.Instance.Avatars.Count)
+                    {
+                        _avatarHome.sprite = AvatarsConfig.Instance.Avatars[id].sprite;
+                    }
                 }
             }
         }
@@ -242,6 +235,9 @@ public class BootStrapController : MonoBehaviour
         }
 
         ApiClient.Get().RequestWalletsUpdate();
+        
+        // No need to sync profile version here separately. 
+        // Sync happened during Login or RefreshToken.
     }
 
     private void OnDestroy()

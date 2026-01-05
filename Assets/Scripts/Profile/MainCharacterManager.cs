@@ -31,6 +31,9 @@ namespace VirtualLand
 
         private const string MAIN_CHARACTER_ID_KEY = "MainCharacterID";
         private const string MAIN_CHARACTER_STYLE_KEY = "MainCharacterStyle";
+        // The name of the object in the profile to update/get
+        private const string PROFILE_OBJECT_NAME = "main_character";
+        private const string PROFILE_VERSION_PREF = "main_character_version";
 
         private int _mainCharacterId = -1;
         private string _mainCharacterStyle = null;
@@ -121,17 +124,49 @@ namespace VirtualLand
         {
             if (_mainCharacterId <= 0) return;
 
-            // Update profile with main character ID and style
-            ApiClient.Get().UpdateUserProfile(_mainCharacterId, _mainCharacterStyle ?? string.Empty,
+            // Prepare payload with both avatar_id and style
+            object styleObj = null;
+            if (!string.IsNullOrEmpty(_mainCharacterStyle))
+            {
+                try
+                {
+                    styleObj = Newtonsoft.Json.JsonConvert.DeserializeObject(_mainCharacterStyle);
+                }
+                catch
+                {
+                    styleObj = _mainCharacterStyle;
+                }
+            }
+
+            var payload = new
+            {
+                avatar_id = _mainCharacterId.ToString(),
+                style = styleObj
+            };
+
+            string jsonPayload = Newtonsoft.Json.JsonConvert.SerializeObject(payload);
+
+            // Use the fixed object name for update
+            string currentKey = PROFILE_OBJECT_NAME;
+
+            ApiClient.Get().UpdateProfileData(currentKey, jsonPayload,
                 (response) =>
                 {
-                    Debug.Log("[MainCharacterManager] Main character saved to profile successfully");
+                    Debug.Log($"[MainCharacterManager] Profile saved successfully to {currentKey}");
+                    
+                    // Update local version timestamp if server provided one (for sync checks)
+                    if (response.timestamp > 0)
+                    {
+                        PlayerPrefs.SetString(PROFILE_VERSION_PREF, response.timestamp.ToString());
+                    }
+                    PlayerPrefs.Save();
                 },
                 (error) =>
                 {
-                    Debug.LogError($"[MainCharacterManager] Failed to save main character to profile: {error}");
+                    Debug.LogError($"[MainCharacterManager] Failed to save profile to {currentKey}: {error}");
                 });
         }
+
 
         /// <summary>
         /// Check if a character is the main character
@@ -139,6 +174,101 @@ namespace VirtualLand
         public bool IsMainCharacter(int characterId)
         {
             return _mainCharacterId == characterId;
+        }
+
+        /// <summary>
+        /// Sync character data from profile (called during login or version mismatch)
+        /// </summary>
+        public void SyncFromProfile(int avatarId, string styleJson)
+        {
+            if (avatarId <= 0) return;
+
+            _mainCharacterId = avatarId;
+            _mainCharacterStyle = styleJson;
+
+            // Save to PlayerPrefs
+            PlayerPrefs.SetInt(MAIN_CHARACTER_ID_KEY, _mainCharacterId);
+            if (!string.IsNullOrEmpty(styleJson))
+            {
+                PlayerPrefs.SetString(MAIN_CHARACTER_STYLE_KEY, styleJson);
+                
+                // Also save style as property of the cached ShopProduct if we have it
+                // but usually style is separate.
+            }
+            else
+            {
+                PlayerPrefs.DeleteKey(MAIN_CHARACTER_STYLE_KEY);
+            }
+            
+            PlayerPrefs.Save();
+            
+            OnMainCharacterChanged?.Invoke(_mainCharacterId);
+            Debug.Log($"[MainCharacterManager] Synced from profile: Avatar ID {avatarId}, Style length: {styleJson?.Length ?? 0}");
+        }
+
+        /// <summary>
+        /// Check if the server has a newer version of the profile data
+        /// </summary>
+        public void CheckProfileVersionAndSync()
+        {
+            string key = PROFILE_OBJECT_NAME;
+            double localVersion = double.Parse(PlayerPrefs.GetString(PROFILE_VERSION_PREF, "0"));
+
+            ApiClient.Get().GetProfileData(key,
+                (response) =>
+                {
+                    if (response.isSuccess && response.result != null)
+                    {
+                        double serverVersion = response.result.timestamp; // Assuming result has timestamp as per ProfileDataResult
+                        // Note: ProfileDataResult definition in ApiClient has timestamp.
+                        // However, response.timestamp is usually typically on the root response for updates?
+                        // Let's check ApiClient.ProfileDataResult definition.
+                        // It has 'public double timestamp;'
+                        
+                        if (serverVersion > localVersion)
+                        {
+                            ApplySyncedProfileData(key, response.result, serverVersion);
+                        }
+                        else
+                        {
+                            Debug.Log($"[MainCharacterManager] Profile data {key} is up to date (Version {serverVersion})");
+                        }
+                    }
+                },
+                (error) =>
+                {
+                    Debug.LogError($"[MainCharacterManager] Failed to check profile version: {error}");
+                });
+        }
+
+        private void ApplySyncedProfileData(string key, ApiClient.ProfileDataResult result, double newVersion)
+        {
+            // 1. Extract style JSON
+            string styleJson = "";
+            if (result.style != null)
+            {
+                if (result.style is string strStyle)
+                    styleJson = strStyle;
+                else
+                    styleJson = Newtonsoft.Json.JsonConvert.SerializeObject(result.style);
+            }
+
+            // 2. Extract avatar ID
+            int avatarId = -1;
+            if (!string.IsNullOrEmpty(result.avatar_id))
+            {
+                int.TryParse(result.avatar_id, out avatarId);
+            }
+
+            // 3. Sync if we have valid data
+            if (avatarId > 0)
+            {
+                SyncFromProfile(avatarId, styleJson);
+            }
+            
+            PlayerPrefs.SetString(PROFILE_VERSION_PREF, newVersion.ToString());
+            PlayerPrefs.Save();
+            Debug.Log($"[MainCharacterManager] Profile data {key} synced (Version {newVersion})");
         }
 
         /// <summary>
@@ -180,18 +310,31 @@ namespace VirtualLand
                 }
             }
 
-            // Load from API
-            ApiClient.Get().GetProductById(_mainCharacterId,
+            // Load from API via GetPurchasedProducts (since GetProductById is unreliable for user products)
+            ApiClient.Get().GetPurchasedProducts("Characters",
                 (response) =>
                 {
                     if (response.isSuccess && response.result != null)
                     {
-                        _mainCharacterProduct = response.result;
-                        onSuccess?.Invoke(_mainCharacterProduct);
+                        var product = response.result.Find(p => p.product.id == _mainCharacterId);
+                        if (product != null && product.product != null)
+                        {
+                            _mainCharacterProduct = product.product;
+                            
+                            // Cache the new product
+                            string newJson = JsonUtility.ToJson(_mainCharacterProduct);
+                            PlayerPrefs.SetString("MainCharacterProduct", newJson);
+
+                            onSuccess?.Invoke(_mainCharacterProduct);
+                        }
+                        else
+                        {
+                            onFail?.Invoke($"Main character (ID: {_mainCharacterId}) not found in purchased characters");
+                        }
                     }
                     else
                     {
-                        onFail?.Invoke("Failed to load main character product");
+                        onFail?.Invoke("Failed to load purchased characters to find main character");
                     }
                 },
                 (error) =>
