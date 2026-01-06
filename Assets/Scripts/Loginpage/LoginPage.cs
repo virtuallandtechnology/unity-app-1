@@ -38,7 +38,7 @@ namespace VirtualLand
 
             if (_loginpassword.text.Length < 5)
             {
-                NotificationController.Get().Show("Validation Error", "Password must be at least 5 characters.", null, null);
+                NotificationController.Get().Show("Validation Error", "Password must be at least 8 characters.", null, null);
                 return;
             }
 

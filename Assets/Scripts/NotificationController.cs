@@ -59,7 +59,7 @@ public class NotificationController : MonoBehaviour
             _okButton.onClick.AddListener(() =>
             {
                 onOk?.Invoke();
-                ClosePanel(yesNoPanel);
+                ClosePanel(NotiicationRoot);
             });
         }
 

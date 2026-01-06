@@ -210,8 +210,12 @@ namespace Bozo.ModularCharacters
             if (!System.IO.Directory.Exists(BMAC_SaveSystem.filePath))
             {
                 System.IO.Directory.CreateDirectory(BMAC_SaveSystem.filePath);
-                System.IO.Directory.CreateDirectory(BMAC_SaveSystem.iconFilePath);
                 print("Created Save JSON save Location At: " + BMAC_SaveSystem.filePath);
+            }
+            if (!System.IO.Directory.Exists(BMAC_SaveSystem.iconFilePath))
+            {
+                System.IO.Directory.CreateDirectory(BMAC_SaveSystem.iconFilePath);
+                print("Created Icon save Location At: " + BMAC_SaveSystem.iconFilePath);
             }
 
             string path = BMAC_SaveSystem.filePath;
