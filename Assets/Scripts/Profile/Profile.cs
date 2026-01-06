@@ -96,7 +96,7 @@ namespace VirtualLand
             SyncCurrentCharacter();
         }
 
-        private void SyncCurrentCharacter()
+        private void SyncCurrentCharacter(int attempt = 0)
         {
             var manager = MainCharacterManager.Instance;
             if (manager != null)
@@ -128,6 +128,10 @@ namespace VirtualLand
                     (err) => 
                     {
                         Debug.LogError($"[Profile] Failed to sync character: {err}");
+                        if (NotificationController.Get() != null)
+                        {
+                            NotificationController.Get().ShowRetryOrError(err, attempt, () => SyncCurrentCharacter(attempt + 1));
+                        }
                     });
                 }
             }

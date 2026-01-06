@@ -31,7 +31,16 @@ namespace VirtualLand
 
             if (string.IsNullOrEmpty(_loginusername.text) ||
                 string.IsNullOrEmpty(_loginpassword.text))
+            {
+                NotificationController.Get().Show("Validation Error", "Please enter username and password.", null, null);
                 return;
+            }
+
+            if (_loginpassword.text.Length < 5)
+            {
+                NotificationController.Get().Show("Validation Error", "Password must be at least 5 characters.", null, null);
+                return;
+            }
 
             LoadingHandler.Get().SetVisible(true);
             Get().Login(_loginusername.text, _loginpassword.text, OnSuccess, OnFail);
@@ -41,7 +50,15 @@ namespace VirtualLand
         {
             print(obj);
             LoadingHandler.Get().SetVisible(false);
-            NotificationController.Get().Show(obj);
+            
+            string message = obj;
+            if (obj.Contains("401"))
+            {
+                message = "Incorrect email or password.";
+            }
+
+            // Use popup with OK button instead of auto-hide
+            NotificationController.Get().Show("Login Error", message, null, null);
         }
 
         private void OnSuccess(ApiResponse<UserData> response)

@@ -53,26 +53,55 @@ public class NotificationController : MonoBehaviour
 
         if (_okButton != null)
         {
+            _okButton.gameObject.SetActive(true);
             _okButton.onClick.RemoveAllListeners();
             _okButton.onClick.AddListener(() =>
             {
                 onOk?.Invoke();
-                ClosePanel(yesNoPanel);
+                ClosePanel(NotiicationRoot);
             });
         }
 
         if (_cancelButton != null)
         {
+            _cancelButton.gameObject.SetActive(true);
             _cancelButton.onClick.RemoveAllListeners();
             _cancelButton.onClick.AddListener(() =>
             {
                 onCancel?.Invoke();
-                ClosePanel(yesNoPanel);
+                ClosePanel(NotiicationRoot);
             });
         }
     }
 
-    public void Show(string description)
+    public void Show(string title, string description, float duration)
+    {
+        if (NotiicationRoot != null) NotiicationRoot.SetActive(true);
+        if (timerPanel != null) timerPanel.SetActive(false);
+        if (yesNoPanel != null)
+        {
+            yesNoPanel.SetActive(true);
+            yesNoPanel.transform.localScale = Vector3.zero;
+            yesNoPanel.transform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutBack);
+        }
+
+        if (_titleText != null) _titleText.text = title;
+        if (_descriptionText != null) _descriptionText.text = description;
+
+        // Hide buttons for transient message
+        if (_okButton != null) _okButton.gameObject.SetActive(false);
+        if (_cancelButton != null) _cancelButton.gameObject.SetActive(false);
+
+        DOVirtual.DelayedCall(duration, () =>
+        {
+            if (NotiicationRoot != null && NotiicationRoot.activeSelf)
+            {
+                ClosePanel(NotiicationRoot);
+            }
+        });
+    }
+
+    public void Show(string description, float duration = 4f)
     {
         if (NotiicationRoot != null) NotiicationRoot.SetActive(true);
         if (yesNoPanel != null) yesNoPanel.SetActive(false);
@@ -89,7 +118,7 @@ public class NotificationController : MonoBehaviour
                 .SetEase(Ease.OutBack)
                 .OnComplete(() =>
                 {
-                    DOVirtual.DelayedCall(timerDelay, () =>
+                    DOVirtual.DelayedCall(duration, () =>
                     {
                         if (timerPanel != null)
                         {
@@ -117,6 +146,18 @@ public class NotificationController : MonoBehaviour
                     panel.SetActive(false);
                     if (NotiicationRoot != null) NotiicationRoot.SetActive(false);
                 });
+        }
+    }
+
+    public void ShowRetryOrError(string error, int attempt, Action retryAction)
+    {
+        if (attempt < 1)
+        {
+            Show("Error", error + "\nTap OK to retry.", retryAction, null);
+        }
+        else
+        {
+            Show("Connection Error", "Please check your internet connection.", null, null);
         }
     }
 }

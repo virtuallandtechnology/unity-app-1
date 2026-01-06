@@ -173,8 +173,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -155.90002, y: -71.100006}
-  m_SizeDelta: {x: -386, y: -148}
+  m_AnchoredPosition: {x: -155.90002, y: -31.0947}
+  m_SizeDelta: {x: -386, y: -228.0106}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1517062688390425849
 CanvasRenderer:
@@ -249,7 +249,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -156.70001, y: 82.79999}
+  m_AnchoredPosition: {x: -160, y: 414}
   m_SizeDelta: {x: 193.44409, y: 73.26306}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1517062688543058345
@@ -730,6 +730,8 @@ MonoBehaviour:
   _toggleText: {fileID: 4759286329891151539}
   _ownedIndicator: {fileID: 3047129328186568123}
   _view3DButton: {fileID: 1892204969336221070}
+  _canvasShop: {fileID: 0}
+  _previewButton: {fileID: 0}
 --- !u!114 &1870182215346969369
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -919,17 +921,17 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Button
+  m_text: view 3D
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8a45ed483403b4050a137cf4553f9af1, type: 2}
+  m_sharedMaterial: {fileID: 8088079628875772496, guid: 8a45ed483403b4050a137cf4553f9af1, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281479730
-  m_fontColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
+    rgba: 4278225397
+  m_fontColor: {r: 0.9622642, g: 0.538868, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -946,8 +948,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 60
+  m_fontSizeBase: 60
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -1217,7 +1219,7 @@ GameObject:
   - component: {fileID: 7049487505173266589}
   - component: {fileID: 1892204969336221070}
   m_Layer: 5
-  m_Name: Button
+  m_Name: Button _view3DButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1240,8 +1242,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -80, y: 15}
-  m_SizeDelta: {x: 160, y: 30}
+  m_AnchoredPosition: {x: -184.91, y: 85}
+  m_SizeDelta: {x: 278.8282, y: 106.764}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8364746880794926158
 CanvasRenderer:
@@ -1271,8 +1273,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 0
+  m_Sprite: {fileID: 21300000, guid: 3e3d9a2ab4efd453584bcefdce9ff684, type: 3}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4

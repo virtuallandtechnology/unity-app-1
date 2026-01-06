@@ -296,6 +296,8 @@ public class CartController : MonoBehaviour
                     (res) => {
                         isSuccess = true;
                         isDone = true;
+                        // Show Title + "Purchase Successful" for 2 seconds
+                        NotificationController.Get().Show(item.title, "Purchase Successful", 2f);
                     },
                     (err) => {
                         isSuccess = false;
