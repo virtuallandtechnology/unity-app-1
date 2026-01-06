@@ -83,10 +83,10 @@ public class CartController : MonoBehaviour
         {
             foreach (var w in wallets)
             {
-                if (w.wallet_type != null && !string.IsNullOrEmpty(w.wallet_type.slug))
+                if (!string.IsNullOrEmpty(w.slug))
                 {
                     // برای مقایسه راحت‌تر در UI همه را کوچک می‌کنیم
-                    string key = w.wallet_type.slug.ToLower().Trim();
+                    string key = w.slug.ToLower().Trim();
 
                     if (_userBalances.ContainsKey(key))
                         _userBalances[key] += w.balance;

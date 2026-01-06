@@ -18,9 +18,9 @@ public class TopBarProfile : MonoBehaviour
         //    return;
         //}
         Username.text = GetPlayer().GetUsername();
-        if ((ApiClient.GetPlayer().profile != null))
+        if ((ApiClient.GetPlayer().GetProfile() != null))
         {
-            if (int.TryParse(ApiClient.GetPlayer().profile.avatar_id, out int avatarId))
+            if (int.TryParse(ApiClient.GetPlayer().GetProfile().avatar_id, out int avatarId))
             {
                 if (avatarId >= 0 && avatarId < AvatarsConfig.Instance.Avatars.Count)
                     Avatar.sprite = AvatarsConfig.Instance.Avatars[avatarId].sprite;

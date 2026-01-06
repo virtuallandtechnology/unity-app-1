@@ -84,7 +84,7 @@ public class BootStrapController : MonoBehaviour
 
         foreach (var wallet in wallets)
         {
-            string slug = wallet.wallet_type.slug;
+            string slug = wallet.slug;
             string balance = wallet.balance.ToString("N0");
             activeSlugs.Add(slug);
 
@@ -218,9 +218,9 @@ public class BootStrapController : MonoBehaviour
         {
             _userNameHome.text = user.GetUsername();
 
-            if (user.profile != null)
+            if (user.GetProfile() != null)
             {
-                if (int.TryParse(user.profile.avatar_id, out int id))
+                if (int.TryParse(user.GetProfile().avatar_id, out int id))
                 {
                     if (AvatarsConfig.Instance != null && id >= 0 && id < AvatarsConfig.Instance.Avatars.Count)
                     {

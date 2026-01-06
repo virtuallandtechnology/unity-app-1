@@ -196,14 +196,33 @@ public partial class ApiClient
     [Serializable]
     public class Wallet
     {
+        public int id;
+        public string name;
+        public string slug;
+        public string image;
+        public string description;
         public double balance;
-        public WalletType wallet_type;
     }
 
     public event Action<List<Wallet>> OnWalletsUpdated;
 
     private List<Wallet> _cachedWallets;
     public List<Wallet> CachedWallets => _cachedWallets;
+
+    public class ProfileWalletDto
+    {
+        public double balance;
+        public WalletTypeDto wallet_type;
+    }
+
+    public class WalletTypeDto
+    {
+        public int id;
+        public string name;
+        public string slug;
+        public string image;
+        public string description;
+    }
 
     public void GetWallets(Action<ApiResponse<List<Wallet>>> onSuccess, Action<string> onFail)
     {
@@ -217,7 +236,51 @@ public partial class ApiClient
         string url = GameConfig.Instance.BaseURL + "/user/profile/wallets";
 
         var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
-            (req, resp) => HandleResponse<List<Wallet>>(req, resp, onSuccess, onFail));
+            (req, resp) =>
+            {
+                // Handle nested response structure
+                HandleResponse<List<ProfileWalletDto>>(req, resp,
+                (dtoResponse) =>
+                {
+                    // Convert DTOs to flat Wallet objects
+                    var wallets = new List<Wallet>();
+                    if (dtoResponse.result != null)
+                    {
+                        foreach (var dto in dtoResponse.result)
+                        {
+                            if (dto.wallet_type != null)
+                            {
+                                wallets.Add(new Wallet
+                                {
+                                    id = dto.wallet_type.id,
+                                    name = dto.wallet_type.name,
+                                    slug = dto.wallet_type.slug,
+                                    image = dto.wallet_type.image,
+                                    description = dto.wallet_type.description,
+                                    balance = dto.balance
+                                });
+                            }
+                        }
+                    }
+
+                    // Create new response with flattened data
+                    var finalResponse = new ApiResponse<List<Wallet>>
+                    {
+                        isSuccess = dtoResponse.isSuccess,
+                        message = dtoResponse.message,
+                        code = dtoResponse.code,
+                        result = wallets,
+                        timestamp = dtoResponse.timestamp
+                    };
+
+                    onSuccess?.Invoke(finalResponse);
+
+                    // Update cache
+                    _cachedWallets = wallets;
+                    OnWalletsUpdated?.Invoke(_cachedWallets);
+
+                }, onFail);
+            });
 
         request.AddHeader("Authorization", $"Bearer {token}");
         request.AddHeader("Accept", "application/json");
@@ -544,18 +607,20 @@ public partial class ApiClient
                 if (response.isSuccess && response.result != null)
                 {
                     // Construct a User object with the profile data
+                    // Construct a User object with the profile data
                     var user = new User();
-                    user.profile = new Profile();
+                    var tempProfile = new Profile();
 
                     if (response.result.style != null)
                     {
                         if (response.result.style is string strStyle)
-                            user.profile.style = strStyle;
+                            tempProfile.style = strStyle;
                         else
-                            user.profile.style = Newtonsoft.Json.JsonConvert.SerializeObject(response.result.style);
+                            tempProfile.style = Newtonsoft.Json.JsonConvert.SerializeObject(response.result.style);
                     }
 
-                    user.profile.avatar_id = response.result.avatar_id;
+                    tempProfile.avatar_id = response.result.avatar_id;
+                    user.profile = tempProfile;
 
                     // We don't have username/email from this endpoint, but BootStrap might need a non-null User
                     // Set basic info if stored
@@ -597,20 +662,39 @@ public partial class ApiClient
                     PlayerPrefs.SetString("username", response.result.user.GetUsername());
 
                     // Sync character from profile if available
-                    if (response.result.user.profile != null)
+                    // Sync character from profile if available
+                    // Handle dynamic profile object (might be JObject or empty JArray)
+                    if (response.result.user.profile != null && !(response.result.user.profile is Array))
                     {
-                        var profile = response.result.user.profile;
-                        if (!string.IsNullOrEmpty(profile.avatar_id))
+                        try
                         {
-                            if (int.TryParse(profile.avatar_id, out int avatarId))
+                            string json = Newtonsoft.Json.JsonConvert.SerializeObject(response.result.user.profile);
+                            if (json != "[]")
                             {
-                                // Use the style from the login response directly
-                                if (VirtualLand.MainCharacterManager.Instance != null)
+                                var profileObj = Newtonsoft.Json.JsonConvert.DeserializeObject<Profile>(json);
+                                if (profileObj != null && !string.IsNullOrEmpty(profileObj.avatar_id))
                                 {
-                                    VirtualLand.MainCharacterManager.Instance.SyncFromProfile(avatarId, profile.style);
+                                    if (int.TryParse(profileObj.avatar_id, out int avatarId))
+                                    {
+                                        if (VirtualLand.MainCharacterManager.Instance != null)
+                                        {
+                                            VirtualLand.MainCharacterManager.Instance.SyncFromProfile(avatarId, profileObj.style);
+                                        }
+                                    }
                                 }
                             }
                         }
+                        catch (Exception ex)
+                        {
+                            Debug.LogWarning($"[ApiClient] Failed to parse profile for sync: {ex.Message}");
+                        }
+                    }
+
+                    // Cache wallets if present in login response
+                    if (response.result.wallets != null)
+                    {
+                        _cachedWallets = response.result.wallets;
+                        OnWalletsUpdated?.Invoke(_cachedWallets);
                     }
 
                     PlayerPrefs.Save();
@@ -649,18 +733,16 @@ public partial class ApiClient
                         PlayerPrefs.SetString("username", response.result.user.GetUsername());
 
                         // Sync character from profile if available
-                        if (response.result.user.profile != null)
+                        // Sync character from profile if available
+                        var profile = response.result.user.GetProfile();
+                        if (profile != null && !string.IsNullOrEmpty(profile.avatar_id))
                         {
-                            var profile = response.result.user.profile;
-                            if (!string.IsNullOrEmpty(profile.avatar_id))
+                            if (int.TryParse(profile.avatar_id, out int avatarId))
                             {
-                                if (int.TryParse(profile.avatar_id, out int avatarId))
+                                // Use the style from the refresh response directly
+                                if (VirtualLand.MainCharacterManager.Instance != null)
                                 {
-                                     // Use the style from the refresh response directly
-                                    if (VirtualLand.MainCharacterManager.Instance != null)
-                                    {
-                                        VirtualLand.MainCharacterManager.Instance.SyncFromProfile(avatarId, profile.style);
-                                    }
+                                    VirtualLand.MainCharacterManager.Instance.SyncFromProfile(avatarId, profile.style);
                                 }
                             }
                         }
@@ -728,6 +810,7 @@ public partial class ApiClient
         public string token { get; set; }
         public string token_type { get; set; }
         public User user { get; set; }
+        public List<Wallet> wallets { get; set; }
     }
 
     public static int playerUserId = -1;
@@ -748,14 +831,15 @@ public partial class ApiClient
         public string email { get; set; }
         public bool email_verified { get; set; }
         public object email_verified_at { get; set; }
-        public Profile profile { get; set; }
+        public object profile { get; set; }
         public string created_at { get; set; }
 
         public string GetUsername()
         {
-            if (profile != null && !string.IsNullOrEmpty(profile.nickname))
+            var p = GetProfile();
+            if (p != null && !string.IsNullOrEmpty(p.nickname))
             {
-                return profile.nickname;
+                return p.nickname;
             }
 
             if (!string.IsNullOrEmpty(username))
@@ -774,6 +858,25 @@ public partial class ApiClient
             }
 
             return "User_" + id;
+        }
+
+        public Profile GetProfile()
+        {
+            if (profile == null) return null;
+
+            // Check if it's already the correct type (unlikely with Newtonsoft->object but possible if manually set)
+            if (profile is Profile p) return p;
+
+            try
+            {
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(profile);
+                if (json != "[]" && json != "null")
+                {
+                    return Newtonsoft.Json.JsonConvert.DeserializeObject<Profile>(json);
+                }
+            }
+            catch { }
+            return null;
         }
     }
 

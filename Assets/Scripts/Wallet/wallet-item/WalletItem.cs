@@ -15,11 +15,11 @@ public class WalletItem : MonoBehaviour
 
     public void Setup(ApiClient.Wallet wallet, ToggleGroup group, Action<string> onSelected)
     {
-        if (wallet == null || wallet.wallet_type == null) return;
+        if (wallet == null) return;
 
-        _nameText.text = wallet.wallet_type.name;
+        _nameText.text = wallet.name;
         _balanceText.text = wallet.balance.ToString("N0");
-        _walletSlug = wallet.wallet_type.slug;
+        _walletSlug = wallet.slug;
         _onWalletSelected = onSelected;
 
         _selectionToggle.group = group;
