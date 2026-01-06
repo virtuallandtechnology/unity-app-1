@@ -67,7 +67,7 @@ namespace VirtualLand
 
             LoadingHandler.Get().SetVisible(false);
             Debug.Log(response.result);
-            PlayerPrefs.SetString("username", response.result.user.profile.nickname);
+            PlayerPrefs.SetString("username", response.result.user.GetUsername());
             string token = response.result.token;
             PlayerPrefs.SetString("token", token);
             
