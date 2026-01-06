@@ -10114,7 +10114,7 @@ GameObject:
   - component: {fileID: 1868847642}
   - component: {fileID: 1868847641}
   m_Layer: 5
-  m_Name: Button back
+  m_Name: Button back editor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -12080,7 +12080,8 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: -4963455090244846730, guid: db85b83cc3ebcc2408136893d9f34849, type: 3}
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 1368775260933147443, guid: db85b83cc3ebcc2408136893d9f34849, type: 3}
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 122089967344744321, guid: db85b83cc3ebcc2408136893d9f34849, type: 3}
       insertIndex: -1
@@ -28782,7 +28783,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4679641440082728922, guid: 16ca523ac3a50406ab6d39552546d5c9, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4679641440082728923, guid: 16ca523ac3a50406ab6d39552546d5c9, type: 3}
       propertyPath: m_Pivot.x
