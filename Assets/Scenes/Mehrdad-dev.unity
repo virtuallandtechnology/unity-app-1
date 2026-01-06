@@ -641,8 +641,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 108.2, y: -65.3}
-  m_SizeDelta: {x: 160, y: 30}
+  m_AnchoredPosition: {x: 201.6, y: -246.3}
+  m_SizeDelta: {x: 289.826, y: 40.732}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &70274292
 MonoBehaviour:
@@ -2705,7 +2705,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 6.0771027, y: -0.0000333786}
+  m_AnchoredPosition: {x: 6.0771027, y: -0.000032424927}
   m_SizeDelta: {x: -39.5014, y: -0.00017166}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &647778012
@@ -2755,7 +2755,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 15.3
+  m_fontSize: 20.8
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -6483,7 +6483,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 6.0771027, y: -0.0000333786}
+  m_AnchoredPosition: {x: 6.0771027, y: -0.000032424927}
   m_SizeDelta: {x: -39.5014, y: -0.00017166}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1339321445
@@ -6533,7 +6533,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 15.3
+  m_fontSize: 20.8
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -7784,8 +7784,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 108.2, y: -109.9}
-  m_SizeDelta: {x: 160, y: 30}
+  m_AnchoredPosition: {x: 201.6001, y: -306.855}
+  m_SizeDelta: {x: 289.826, y: 40.732}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1612614083
 MonoBehaviour:
@@ -28783,7 +28783,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4679641440082728922, guid: 16ca523ac3a50406ab6d39552546d5c9, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4679641440082728923, guid: 16ca523ac3a50406ab6d39552546d5c9, type: 3}
       propertyPath: m_Pivot.x
