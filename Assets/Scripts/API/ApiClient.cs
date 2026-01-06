@@ -129,11 +129,32 @@ public partial class ApiClient
 
     public void GetProductById(int productId, Action<ApiResponse<ShopProduct>> onSuccess, Action<string> onFail)
     {
+        if (productId <= 0)
+        {
+            // If product ID is invalid, return a default successful response
+            var apiResponse = new ApiResponse<ShopProduct> { isSuccess = true, result = null };
+            onSuccess?.Invoke(apiResponse);
+            return;
+        }
+
         string token = PlayerPrefs.GetString("token");
-        string url = $"{GameConfig.Instance.BaseURL}/user/profile/get/{productId}";
+        string url = $"{GameConfig.Instance.BaseURL}/user/products/details/{productId}";
 
         var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
-            (req, resp) => HandleResponse<ShopProduct>(req, resp, onSuccess, onFail));
+           (req, resp) => HandleResponse<ShopProduct>(req, resp, onSuccess, onFail));
+
+
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.Send();
+    }
+
+    public void GetProfileById(int id, Action<ApiResponse<ProfileDataResult>> onSuccess, Action<string> onFail)
+    {
+        string token = PlayerPrefs.GetString("token");
+        string url = $"{GameConfig.Instance.BaseURL}/user/profile/get/{id}";
+
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
+            (req, resp) => HandleResponse<ProfileDataResult>(req, resp, onSuccess, onFail));
 
         request.AddHeader("Authorization", $"Bearer {token}");
         request.Send();
@@ -557,8 +578,11 @@ public partial class ApiClient
                         {
                             if (int.TryParse(profile.avatar_id, out int avatarId))
                             {
-                                // Fetch fresh data from dynamic endpoint instead of using profile.style
-                                VirtualLand.MainCharacterManager.Instance.SyncMainCharacterFromLogin(avatarId);
+                                // Use the style from the login response directly
+                                if (VirtualLand.MainCharacterManager.Instance != null)
+                                {
+                                    VirtualLand.MainCharacterManager.Instance.SyncFromProfile(avatarId, profile.style);
+                                }
                             }
                         }
                     }
@@ -606,8 +630,11 @@ public partial class ApiClient
                             {
                                 if (int.TryParse(profile.avatar_id, out int avatarId))
                                 {
-                                    // Fetch fresh data from dynamic endpoint instead of using profile.style
-                                    VirtualLand.MainCharacterManager.Instance.SyncMainCharacterFromLogin(avatarId);
+                                     // Use the style from the refresh response directly
+                                    if (VirtualLand.MainCharacterManager.Instance != null)
+                                    {
+                                        VirtualLand.MainCharacterManager.Instance.SyncFromProfile(avatarId, profile.style);
+                                    }
                                 }
                             }
                         }
@@ -795,11 +822,13 @@ public partial class ApiClient
     public void UpdateUserProfile(int avatarId, string styleJson, Action<ApiResponse<object>> onSuccess, Action<string> onFail)
     {
         string token = PlayerPrefs.GetString("token");
-        string url = $"{GameConfig.Instance.BaseURL}/user/profile/update";
+        // User requested to append product ID to the update URL: .../user/profile/update/41
+        string url = $"{GameConfig.Instance.BaseURL}/user/profile/update/{avatarId}";
 
         var data = new UpdateProfileRequest
         {
             avatar_id = avatarId.ToString(),
+            // style might be needed or not depending on API, keeping it safely as user only mentioned URL change
             style = styleJson 
         };
 

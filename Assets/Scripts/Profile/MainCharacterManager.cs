@@ -104,38 +104,69 @@ namespace VirtualLand
         /// <summary>
         /// Load main character from PlayerPrefs
         /// </summary>
-        /// <summary>
-        /// Load main character from PlayerPrefs
-        /// </summary>
         private void LoadMainCharacterFromPrefs()
         {
-            if (PlayerPrefs.HasKey(MAIN_CHARACTER_ID_KEY))
+            // Default to 41 if not found (first time)
+            bool hasKey = PlayerPrefs.HasKey(MAIN_CHARACTER_ID_KEY);
+            _mainCharacterId = PlayerPrefs.GetInt(MAIN_CHARACTER_ID_KEY, 41);
+
+            if (!hasKey)
             {
-                _mainCharacterId = PlayerPrefs.GetInt(MAIN_CHARACTER_ID_KEY, -1);
-                if (PlayerPrefs.HasKey(MAIN_CHARACTER_STYLE_KEY))
-                {
-                    _mainCharacterStyle = PlayerPrefs.GetString(MAIN_CHARACTER_STYLE_KEY);
-                }
-                
-                // Load product to get the name
-                if (PlayerPrefs.HasKey("MainCharacterProduct"))
-                {
-                    string json = PlayerPrefs.GetString("MainCharacterProduct");
-                    try 
-                    {
-                        var product = JsonUtility.FromJson<ShopProduct>(json);
-                        if (product != null)
-                        {
-                            _mainCharacterProduct = product;
-                            // Now fetch the latest style from server for this character
-                            FetchCharacterDataFromServer(product.title);
-                        }
-                    }
-                    catch {}
-                }
-                
-                Debug.Log($"[MainCharacterManager] Loaded main character ID from prefs: {_mainCharacterId}");
+                // Save immediately so it persists
+                PlayerPrefs.SetInt(MAIN_CHARACTER_ID_KEY, _mainCharacterId);
+                PlayerPrefs.Save();
             }
+
+            if (PlayerPrefs.HasKey(MAIN_CHARACTER_STYLE_KEY))
+            {
+                _mainCharacterStyle = PlayerPrefs.GetString(MAIN_CHARACTER_STYLE_KEY);
+            }
+
+            // Load product to get the name
+            if (PlayerPrefs.HasKey("MainCharacterProduct"))
+            {
+                string json = PlayerPrefs.GetString("MainCharacterProduct");
+                try
+                {
+                    var product = JsonUtility.FromJson<ShopProduct>(json);
+                    if (product != null && product.id == _mainCharacterId)
+                    {
+                        _mainCharacterProduct = product;
+                        // Now fetch the latest style from server for this character
+                        FetchCharacterDataFromServer(product.title);
+                    }
+                }
+                catch { }
+            }
+
+            // If we have an ID but no product (e.g. default 41 on first run), try to load it
+            if (_mainCharacterProduct == null && _mainCharacterId > 0)
+            {
+                // Use GetProfileById to fetch the style directly, as GetProductById expects a ShopProduct
+                ApiClient.Get().GetProfileById(_mainCharacterId,
+                (response) =>
+                {
+                    if (response.isSuccess && response.result != null)
+                    {
+                        ApplySyncedProfileData("MainCharacter", response.result, 0);
+                    }
+                },
+                (error) =>
+                {
+                    // If failed to load (e.g. 404), reset to default 41
+                    if (_mainCharacterId != 41)
+                    {
+                        Debug.LogWarning($"[MainCharacterManager] Failed to load character {_mainCharacterId}. Resetting to 41.");
+                        _mainCharacterId = 41;
+                        PlayerPrefs.SetInt(MAIN_CHARACTER_ID_KEY, 41);
+                        PlayerPrefs.Save();
+                        // Try loading default again
+                        LoadMainCharacterFromPrefs();
+                    }
+                });
+            }
+
+            Debug.Log($"[MainCharacterManager] Loaded main character ID from prefs: {_mainCharacterId}");
         }
 
         private void FetchCharacterDataFromServer(string characterName)
@@ -183,6 +214,11 @@ namespace VirtualLand
         private void SaveMainCharacterToProfile()
         {
             if (_mainCharacterId <= 0) return;
+
+            // Update the active avatar ID on the user profile so it persists across logins
+            ApiClient.Get().UpdateUserProfile(_mainCharacterId, _mainCharacterStyle,
+                (response) => Debug.Log($"[MainCharacterManager] Active avatar set to {_mainCharacterId}"),
+                (error) => Debug.LogError($"[MainCharacterManager] Failed to set active avatar: {error}"));
 
             // Prepare payload with both avatar_id and style
             object styleObj = null;
@@ -380,27 +416,71 @@ namespace VirtualLand
             }
 
             // Load from API using GetProductById which is faster/direct for getting Title
-            ApiClient.Get().GetProductById(_mainCharacterId,
+            // Load from Inventory (Purchased Products) instead of Shop Details to avoid 404 on unlisted items
+            // User hint: {{url}}/user/profile/products/CIVILIANS
+            ApiClient.Get().GetPurchasedProducts("CIVILIANS",
                 (response) =>
                 {
                     if (response.isSuccess && response.result != null)
                     {
-                        _mainCharacterProduct = response.result;
+                        // Find the product with the matching ID
+                        var itemWrapper = response.result.Find(w => w.product != null && w.product.id == _mainCharacterId);
                         
-                        // Cache the new product
-                        string newJson = JsonUtility.ToJson(_mainCharacterProduct);
-                        PlayerPrefs.SetString("MainCharacterProduct", newJson);
+                        if (itemWrapper != null && itemWrapper.product != null)
+                        {
+                            _mainCharacterProduct = itemWrapper.product;
+                            
+                            // Cache the new product
+                            string newJson = JsonUtility.ToJson(_mainCharacterProduct);
+                            PlayerPrefs.SetString("MainCharacterProduct", newJson);
 
-                        onSuccess?.Invoke(_mainCharacterProduct);
+                            onSuccess?.Invoke(_mainCharacterProduct);
+                        }
+                        else
+                        {
+                            // fallback: if not found in inventory, try generic GetProductById or fail
+                            // Trying generic GetProductById as last resort
+                             ApiClient.Get().GetProductById(_mainCharacterId,
+                                (prodResp) => {
+                                    if(prodResp.isSuccess && prodResp.result != null)
+                                    {
+                                        _mainCharacterProduct = prodResp.result;
+                                        string newJson2 = JsonUtility.ToJson(_mainCharacterProduct);
+                                        PlayerPrefs.SetString("MainCharacterProduct", newJson2);
+                                        onSuccess?.Invoke(_mainCharacterProduct);
+                                    }
+                                    else
+                                    {
+                                         onFail?.Invoke($"Failed to find main character (ID: {_mainCharacterId}) in inventory or shop");
+                                    }
+                                },
+                                (err) => onFail?.Invoke(err));
+                        }
                     }
                     else
                     {
-                        onFail?.Invoke($"Failed to find main character (ID: {_mainCharacterId})");
+                        onFail?.Invoke($"Failed to load purchased characters: {response.message}");
                     }
                 },
                 (error) =>
                 {
-                    onFail?.Invoke(error);
+                    // Fallback to GetProductById if PurchasedProducts fails
+                    ApiClient.Get().GetProductById(_mainCharacterId,
+                        (response) =>
+                        {
+                            if (response.isSuccess && response.result != null)
+                            {
+                                _mainCharacterProduct = response.result;
+                                string newJson = JsonUtility.ToJson(_mainCharacterProduct);
+                                PlayerPrefs.SetString("MainCharacterProduct", newJson);
+                                onSuccess?.Invoke(_mainCharacterProduct);
+                            }
+                            else
+                            {
+                                onFail?.Invoke($"Failed to find main character (ID: {_mainCharacterId}): {error}");
+                            }
+                        },
+                        (err) => onFail?.Invoke(err));
                 });
         }
         
@@ -417,16 +497,29 @@ namespace VirtualLand
             PlayerPrefs.SetInt(MAIN_CHARACTER_ID_KEY, _mainCharacterId);
             PlayerPrefs.Save();
 
-            // 1. Load Product to get Name
-            LoadMainCharacterProduct(
-                (product) =>
+            // 1. Fetch Profile Data directly by ID
+            ApiClient.Get().GetProfileById(_mainCharacterId,
+                (response) =>
                 {
-                    // 2. Fetch Data using Name
-                    FetchCharacterDataFromServer(product.title);
+                    if (response.isSuccess && response.result != null)
+                    {
+                        ApplySyncedProfileData("LoginSync", response.result, 0);
+                    }
                 },
                 (error) =>
                 {
                     Debug.LogError($"[MainCharacterManager] Failed to sync from login: {error}");
+
+                    // Fallback to 41 if the synced ID is invalid (e.g. 404 from server)
+                    if (_mainCharacterId != 41)
+                    {
+                        Debug.LogWarning($"[MainCharacterManager] Invalid avatar ID {avatarId} from server. Reverting to 41.");
+                        _mainCharacterId = 41;
+                        PlayerPrefs.SetInt(MAIN_CHARACTER_ID_KEY, 41);
+                        PlayerPrefs.Save();
+                        // Retry with default
+                        SyncMainCharacterFromLogin(41);
+                    }
                 });
         }
 

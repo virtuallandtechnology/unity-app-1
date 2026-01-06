@@ -36,13 +36,30 @@ namespace VirtualLand
         [Header("Main Character Display")]
         [SerializeField] private TextMeshProUGUI _mainCharacterText;
 
+        public User GetUser;
+
         private int _currentProfileID;
 
         private void OnEnable()
         {
             if (LoadingHandler.Get() != null) LoadingHandler.Get().SetVisible(true);
 
-            ApiClient.Get().GetProfileInfo(OnGetInfoSuccess, OnFail);
+            // Populate User Info from cached data (Login/Refresh)
+            var player = ApiClient.GetPlayer();
+            if (player != null)
+            {
+                GetUser = player;
+                if (_email != null) _email.text = GetUser.email;
+                if (_username != null) _username.text = GetUser.GetUsername();
+                
+                if (LoadingHandler.Get() != null) LoadingHandler.Get().SetVisible(false);
+            }
+            else
+            {
+                // Fallback to PlayerPrefs if player object is lost (e.g. strict restart without refresh)
+                if (_username != null) _username.text = PlayerPrefs.GetString("username", "User");
+                if (LoadingHandler.Get() != null) LoadingHandler.Get().SetVisible(false);
+            }
 
             // Setup purchased characters button
             if (_viewPurchasedCharactersButton != null)
@@ -74,6 +91,46 @@ namespace VirtualLand
 
             // Update main character display
             UpdateMainCharacterDisplay();
+            
+            // Sync current character from server
+            SyncCurrentCharacter();
+        }
+
+        private void SyncCurrentCharacter()
+        {
+            var manager = MainCharacterManager.Instance;
+            if (manager != null)
+            {
+                int charId = manager.MainCharacterId;
+                if (charId <= 0)
+                {
+                    if (NotificationController.Get() != null)
+                        NotificationController.Get().Show("You haven't selected any character yet.");
+                }
+                else
+                {
+                    ApiClient.Get().GetProfileById(charId, (response) => 
+                    {
+                        if (response.isSuccess && response.result != null)
+                        {
+                            string styleJson = "";
+                            if (response.result.style != null)
+                            {
+                                if (response.result.style is string s) styleJson = s;
+                                else styleJson = Newtonsoft.Json.JsonConvert.SerializeObject(response.result.style);
+                            }
+                            manager.SyncFromProfile(charId, styleJson);
+                            
+                            // Also update avatar images if they depend on the ID
+                             UpdateAllImages(charId);
+                        }
+                    }, 
+                    (err) => 
+                    {
+                        Debug.LogError($"[Profile] Failed to sync character: {err}");
+                    });
+                }
+            }
         }
 
         private void OnViewPurchasedCharactersClicked()
@@ -182,34 +239,8 @@ namespace VirtualLand
             }
         }
 
-        private void OnGetInfoSuccess(ApiResponse<User> response)
-        {
-            if (LoadingHandler.Get() != null) LoadingHandler.Get().SetVisible(false);
-
-            if (response.result != null)
-            {
-                var user = response.result;
-
-                if (_email != null) _email.text = user.email;
-
-                if (_username != null) _username.text = user.GetUsername();
-
-                if (user.profile != null)
-                {
-                    if (int.TryParse(user.profile.avatar_id, out _currentProfileID))
-                    {
-                        // Sync main character selection
-                        if (MainCharacterManager.Instance != null && _currentProfileID > 0)
-                        {
-                            MainCharacterManager.Instance.SyncMainCharacterId(_currentProfileID);
-                        }
-
-                        UpdateAllImages(_currentProfileID);
-                    }
-                }
-            }
-        }
-
+        // Removed OnGetInfoSuccess as we don't call GetProfileInfo anymore
+        
         public void SetProfile(int id)
         {
             _currentProfileID = id;
