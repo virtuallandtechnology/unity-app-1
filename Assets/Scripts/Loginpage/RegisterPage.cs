@@ -31,9 +31,9 @@ public class RegisterPage : BootStrapBasePanel
             return;
         }
 
-        if (_password2.text.Length < 5)
+        if (_password2.text.Length < 8)
         {
-            NotificationController.Get().Show("Validation Error", "Password must be at least 5 characters.", null, null);
+            NotificationController.Get().Show("Validation Error", "Password must be at least 8 characters.", null, null);
             return;
         }
 
@@ -48,7 +48,7 @@ public class RegisterPage : BootStrapBasePanel
         }
 
         LoadingHandler.Get().SetVisible(true);
-        ApiClient.Get().Register(_name.text, _password2.text, _email.text,
+        ApiClient.Get().Register(_name.text, _password1.text, _email.text,
             OnSuccess, OnFail);
     }
 

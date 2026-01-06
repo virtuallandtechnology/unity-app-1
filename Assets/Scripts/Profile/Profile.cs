@@ -127,6 +127,12 @@ namespace VirtualLand
                     }, 
                     (err) => 
                     {
+                        if (err.Contains("404"))
+                        {
+                             Debug.LogWarning("[Profile] Character not found (404). User may not have purchased one yet.");
+                             return;
+                        }
+
                         Debug.LogError($"[Profile] Failed to sync character: {err}");
                         if (NotificationController.Get() != null)
                         {
@@ -174,7 +180,7 @@ namespace VirtualLand
             {
                 if (NotificationController.Get() != null)
                 {
-                    NotificationController.Get().Show("Please select a main character first");
+                    NotificationController.Get().Show("Validation Error", "No products to display", 2f);
                 }
                 return;
             }
@@ -194,6 +200,15 @@ namespace VirtualLand
                 },
                 (error) =>
                 {
+                    if (error.Contains("404"))
+                    {
+                        if (NotificationController.Get() != null)
+                        {
+                            NotificationController.Get().Show("Validation Error", "You have no products to display.\nPlease visit the shop to purchase one.", 2f);
+                        }
+                        return;
+                    }
+
                     Debug.LogError($"[Profile] Failed to load main character: {error}");
                     if (NotificationController.Get() != null)
                     {

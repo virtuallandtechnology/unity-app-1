@@ -40,6 +40,7 @@ public class NotificationController : MonoBehaviour
     public void Show(string title, string description, Action onOk, Action onCancel)
     {
         if (NotiicationRoot != null) NotiicationRoot.SetActive(true);
+        if (NotiicationRoot != null) NotiicationRoot.transform.localScale = Vector3.one;
         if (timerPanel != null) timerPanel.SetActive(false);
         if (yesNoPanel != null)
         {
@@ -58,7 +59,7 @@ public class NotificationController : MonoBehaviour
             _okButton.onClick.AddListener(() =>
             {
                 onOk?.Invoke();
-                ClosePanel(NotiicationRoot);
+                ClosePanel(yesNoPanel);
             });
         }
 
@@ -69,7 +70,7 @@ public class NotificationController : MonoBehaviour
             _cancelButton.onClick.AddListener(() =>
             {
                 onCancel?.Invoke();
-                ClosePanel(NotiicationRoot);
+                ClosePanel(yesNoPanel);
             });
         }
     }
@@ -77,12 +78,13 @@ public class NotificationController : MonoBehaviour
     public void Show(string title, string description, float duration)
     {
         if (NotiicationRoot != null) NotiicationRoot.SetActive(true);
+        if (NotiicationRoot != null) NotiicationRoot.transform.localScale = Vector3.one;
         if (timerPanel != null) timerPanel.SetActive(false);
         if (yesNoPanel != null)
         {
             yesNoPanel.SetActive(true);
-            yesNoPanel.transform.localScale = Vector3.zero;
-            yesNoPanel.transform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutBack);
+            NotiicationRoot.transform.localScale = Vector3.zero;
+            NotiicationRoot.transform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutBack);
         }
 
         if (_titleText != null) _titleText.text = title;
@@ -104,6 +106,7 @@ public class NotificationController : MonoBehaviour
     public void Show(string description, float duration = 4f)
     {
         if (NotiicationRoot != null) NotiicationRoot.SetActive(true);
+        if (NotiicationRoot != null) NotiicationRoot.transform.localScale = Vector3.one; // Ensure root is visible
         if (yesNoPanel != null) yesNoPanel.SetActive(false);
 
         if (_TimerPaneldescriptionText != null)
@@ -120,16 +123,7 @@ public class NotificationController : MonoBehaviour
                 {
                     DOVirtual.DelayedCall(duration, () =>
                     {
-                        if (timerPanel != null)
-                        {
-                            timerPanel.transform.DOScale(Vector3.zero, 0.3f)
-                                .SetEase(Ease.InBack)
-                                .OnComplete(() =>
-                                {
-                                    timerPanel.SetActive(false);
-                                    if (NotiicationRoot != null) NotiicationRoot.SetActive(false);
-                                });
-                        }
+                        ClosePanel(timerPanel);
                     });
                 });
         }

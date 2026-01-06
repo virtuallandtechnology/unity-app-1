@@ -341,6 +341,13 @@ public partial class ApiClient
                     onFail?.Invoke(error);
                     return;
                 }
+                else if (response.StatusCode == 404)
+                {
+                    // 404 is often valid (e.g. profile not set yet). Log as warning.
+                    Debug.LogWarning($"[ApiClient] Not Found (404) for {request.Uri}");
+                    onFail?.Invoke(error);
+                    return;
+                }
             }
             else if (request.State != HTTPRequestStates.Finished)
                 error = $"Network Error: {request.State}";
@@ -351,24 +358,43 @@ public partial class ApiClient
     }
 
     [Serializable]
-    public class Passwordclass
+    public class RegisterRequest
     {
+        public string username;
         public string email;
-        public string name;
         public string password;
+        public RegisterProfile profile;
+    }
+
+    [Serializable]
+    public class RegisterProfile
+    {
+        public string name;
+        public string avatar;
     }
 
     public void Register(string username, string password, string email,
         Action<ApiResponse<UserData>> onSuccess, Action<string> onFail)
     {
         string url = GameConfig.Instance.BaseURL + "/auth/register";
-        var t = new Passwordclass() { name = username, password = password, email = email };
+
+        var payload = new RegisterRequest
+        {
+            username = username,
+            email = email,
+            password = password,
+            profile = new RegisterProfile
+            {
+                name = username, // Using username as name for now
+                avatar = "" // Placeholder or default
+            }
+        };
 
         var request = new HTTPRequest(new System.Uri(url), HTTPMethods.Post,
             (req, resp) => HandleResponse<UserData>(req, resp, onSuccess, onFail));
         request.AddHeader("Content-Type", "application/json");
 
-        byte[] body = Encoding.UTF8.GetBytes(JsonUtility.ToJson(t));
+        byte[] body = Encoding.UTF8.GetBytes(JsonUtility.ToJson(payload));
         request.UploadSettings.UploadStream = new System.IO.MemoryStream(body);
 
         request.Send();
