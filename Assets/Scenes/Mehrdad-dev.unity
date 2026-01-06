@@ -1015,7 +1015,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Button
+  m_text: 'Back '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -8667,7 +8667,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257265604589, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 72
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257366363176, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_textAlignment
@@ -8691,23 +8691,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257366363177, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257366363177, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257366363177, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 48.41
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257366363177, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 37.5
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257366363177, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -36
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257652780047, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_IsActive
@@ -8715,11 +8715,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257677923671, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_AnchorMax.x
-      value: 0.526
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257677923671, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257681116946, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_Pivot.x
@@ -8831,15 +8831,15 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: d9b454495b7d24a7a933eb61bdfa0607, type: 2}
     - target: {fileID: 6874733257993394555, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_fontColor.b
-      value: 0.20754719
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257993394555, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_fontColor.g
-      value: 0.16090739
+      value: 0.90494835
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257993394555, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_fontColor.r
-      value: 0
+      value: 0.5801887
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257993394555, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_textAlignment
@@ -8855,7 +8855,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257993394555, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_fontColor32.rgba
-      value: 4281673984
+      value: 4294961044
       objectReference: {fileID: 0}
     - target: {fileID: 6874733257993394555, guid: 7252178c4c8c44cc0b66e265375016ed, type: 3}
       propertyPath: m_TextStyleHashCode
@@ -18753,7 +18753,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &6979095660017100109
 RectTransform:
   m_ObjectHideFlags: 0
@@ -19359,7 +19359,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0.38900003}
-  m_AnchoredPosition: {x: 86.604, y: -14}
+  m_AnchoredPosition: {x: 86.604, y: -13.9999695}
   m_SizeDelta: {x: 540.93896, y: -48.99585}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6979095660075016718
@@ -28964,6 +28964,10 @@ PrefabInstance:
     - target: {fileID: 4679641440944527055, guid: 16ca523ac3a50406ab6d39552546d5c9, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
+    - target: {fileID: 4679641441218270847, guid: 16ca523ac3a50406ab6d39552546d5c9, type: 3}
+      propertyPath: m_text
+      value: Email..
       objectReference: {fileID: 0}
     - target: {fileID: 4679641441218270847, guid: 16ca523ac3a50406ab6d39552546d5c9, type: 3}
       propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
