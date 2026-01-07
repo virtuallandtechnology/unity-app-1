@@ -21,7 +21,7 @@ namespace Game.Shop.Testing
 
             Debug.Log($"[Test] Loading preview for Product ID: {testProductId}");
             
-            loader.LoadPreviewByProductId(testProductId, testCategorySlug, (success) =>
+            loader.LoadPreviewByProductId(testProductId, testCategorySlug, false, (success) =>
             {
                 if (success)
                 {

@@ -94,8 +94,9 @@ namespace Game.Shop.UI
             if (_shopCanvas != null) _shopCanvas.SetActive(false);
             if (_previewCanvas != null) _previewCanvas.SetActive(true);
             
-            // Check if editable
-            bool isEditable = IsEditable(product);
+            // Check if editable from loader context
+            bool isEditable = ProductPreviewLoader.Instance.IsCurrentPreviewEditable && DoesProductSupportEditing(product);
+            
             if (_editorPanel != null) _editorPanel.SetActive(isEditable);
             if (_saveButton != null) _saveButton.gameObject.SetActive(isEditable);
 
@@ -106,11 +107,9 @@ namespace Game.Shop.UI
             }
         }
 
-        private bool IsEditable(ApiClient.ShopProduct product)
+        private bool DoesProductSupportEditing(ApiClient.ShopProduct product)
         {
-            // Use category slug to determine if editable (e.g. only characters)
-            // This is a simple check; expand as needed
-            // Currently assuming "CHARCTERS" is the slug, verifying via Configs would be better but this suffices.
+            // Only characters (managed by CharacterViewerAdapter) are editable
             var widget = ProductPreviewLoader.Instance.GetCurrentWidget();
             return widget is Game.Shop.Preview.Adapters.CharacterViewerAdapter;
         }
@@ -204,6 +203,14 @@ namespace Game.Shop.UI
                 {
                     ShowFeedback("Profile Updated Successfully!");
                     if (_saveButton) _saveButton.interactable = true;
+
+                    // Sync to MainCharacterManager if this is the active character
+                    if (VirtualLand.MainCharacterManager.Instance != null && 
+                        VirtualLand.MainCharacterManager.Instance.IsMainCharacter(product.id))
+                    {
+                        VirtualLand.MainCharacterManager.Instance.SyncFromProfile(product.id, styleJson);
+                        Debug.Log("[ShopPreviewUI] Synced active character style to MainCharacterManager");
+                    }
                 },
                 (error) =>
                 {

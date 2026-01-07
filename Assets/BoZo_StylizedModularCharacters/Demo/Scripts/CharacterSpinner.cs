@@ -50,11 +50,16 @@ namespace Bozo.ModularCharacters
             {
                 spinning = false;
             }
-            character.Rotate(0, spinDir, 0);
+            
+            // Safety check: don't try to rotate destroyed character
+            if (character != null)
+            {
+                character.Rotate(0, spinDir, 0);
+            }
             spinDir = Mathf.Lerp(spinDir, 0, Time.deltaTime);
             dizzyTimer -= Time.deltaTime;
 
-            if (dizzyTimer <= 0)
+            if (dizzyTimer <= 0 && anim != null)
             {
                 if (spinDir >= 5 || spinDir <= -5)
                 {

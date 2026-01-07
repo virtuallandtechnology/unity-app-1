@@ -87,24 +87,65 @@ namespace VirtualLand
             // Initialize character viewer
             if (_characterViewer != null)
             {
-                _characterViewer.Initialize(characterProduct);
+                _characterViewer.Initialize(characterProduct, CharacterLoadMode.CustomizedData);
 
-                _characterViewer.LoadModel();
+                // Strategy: Load from API/savedStyle if available, otherwise check fallbacks.
+                // We use LoadFromCharacterObject to set up the base, then Apply customizations.
 
-                // Check for local save first
-                var localSaveData = BMAC_SaveSystem.GetDataFromID(characterProduct.title);
-                // var localSaveData = BMAC_SaveSystem.GetDataFromID(characterProduct.title); // Using title as ID for local save matching
-
-                if (localSaveData != null)
+                // Find config for base model
+                var previewConfig = Resources.Load<Game.Shop.Preview.PreviewSystemConfig>("Shop/Configs/PreviewSystemConfig");
+                Game.Shop.Preview.PreviewWidgetConfig foundConfig = null;
+                
+                if (previewConfig != null)
                 {
-                    string json = JsonUtility.ToJson(localSaveData);
-                    _characterViewer.LoadCustomization(json);
-                    Debug.Log($"[MainCharacterEditor] Loaded local save for {characterProduct.title}");
+                    string[] characterCategories = new string[]
+                    {
+                        "CIVILIANS", "GANG-MEMBERS", "POLICE-LAW",
+                        "SPECIAL-OPS", "VIP-BUSINESS", "CUSTOM-AVATARS"
+                    };
+
+                    foreach (var category in characterCategories)
+                    {
+                        var config = previewConfig.FindBestWidgetConfig(characterProduct, category);
+                        if (config != null && config.characterObject != null && config.baseCharacterPrefab != null)
+                        {
+                            foundConfig = config;
+                            break;
+                        }
+                    }
                 }
-                // Load saved customization from API if available and no local save
-                else if (!string.IsNullOrEmpty(savedStyle))
+
+                if (foundConfig != null)
                 {
+                    // Load the base character
+                    _characterViewer.LoadFromCharacterObject(
+                        foundConfig.characterObject,
+                        foundConfig.baseCharacterPrefab,
+                        CharacterLoadMode.CustomizedData
+                    );
+                }
+                else
+                {
+                    // Fallback to model if no config
+                    _characterViewer.LoadModel();
+                }
+
+                // NOW apply customization (API parameter has highest priority)
+                if (!string.IsNullOrEmpty(savedStyle))
+                {
+                    Debug.Log($"[MainCharacterEditor] Applying API customization for {characterProduct.title}");
                     _characterViewer.LoadCustomization(savedStyle);
+                }
+                else
+                {
+                    // Try local fallback if API is empty
+                    var localSaveData = BMAC_SaveSystem.GetDataFromID(characterProduct.title);
+                    if (localSaveData != null)
+                    {
+                        Debug.Log($"[MainCharacterEditor] Applying local fallback customization for {characterProduct.title}");
+                        string json = JsonUtility.ToJson(localSaveData);
+                        _characterViewer.LoadCustomization(json);
+                    }
                 }
             }
 
@@ -165,6 +206,9 @@ namespace VirtualLand
             if (_saveButton != null) _saveButton.interactable = false;
             ShowFeedback("Saving...");
 
+            // Capture current style
+            string currentStyle = _characterViewer.SaveCustomization();
+
             // Use CharacterCreator's save logic which handles local save and API call
             var creator = _characterViewer.GetCharacterCreator();
             if (creator != null)
@@ -174,9 +218,11 @@ namespace VirtualLand
                     ShowFeedback("Changes saved successfully!");
                     if (_saveButton != null) _saveButton.interactable = true;
 
-                    // Update manager with the new style (we might need to reload it or just notify)
-                    // Since we saved to disk, next time we load, we should load from disk if possible
-                    // or rely on the API update we just did.
+                    // Update manager with the new style so it persists in the session
+                    if (_characterManager != null && _characterManager.IsMainCharacter(_currentCharacter.id))
+                    {
+                        _characterManager.SyncFromProfile(_currentCharacter.id, currentStyle);
+                    }
                 });
             }
             else
@@ -204,4 +250,3 @@ namespace VirtualLand
         }
     }
 }
-

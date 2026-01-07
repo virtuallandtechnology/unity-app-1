@@ -373,12 +373,14 @@ namespace Bozo.ModularCharacters
         public void SetColorPickerObject(string type)
         {
             if (character == null) return;
+            if (colorPickerControl == null) return; // Safety check
             var outfit = character.GetOutfit(type);
             colorPickerControl.ChangeObject(outfit);
         }
 
         public void SetColorPickerObject(Outfit outfit)
         {
+            if (colorPickerControl == null) return; // Safety check
             colorPickerControl.ChangeObject(outfit);
         }
 

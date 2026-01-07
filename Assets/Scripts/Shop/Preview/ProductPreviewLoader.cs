@@ -26,6 +26,9 @@ namespace Game.Shop.Preview
         private IProductPreviewWidget _currentWidget;
         private ApiClient.ShopProduct _currentProduct;
         private string _currentCategorySlug;
+        private bool _isCurrentPreviewEditable;
+
+        public bool IsCurrentPreviewEditable => _isCurrentPreviewEditable;
 
         private void Awake()
         {
@@ -60,17 +63,17 @@ namespace Game.Shop.Preview
         /// Load and show preview by Product ID
         /// Fetches product from API and displays appropriate widget
         /// </summary>
-        public void LoadPreviewByProductId(int productId, string categorySlug, Action<bool> onComplete = null)
+        public void LoadPreviewByProductId(int productId, string categorySlug, bool isEditable = false, Action<bool> onComplete = null)
         {
             if (_config.enableDebugLogs)
-                Debug.Log($"[ProductPreviewLoader] Loading preview for product ID: {productId}, category: {categorySlug}");
+                Debug.Log($"[ProductPreviewLoader] Loading preview for product ID: {productId}, category: {categorySlug}, editable: {isEditable}");
 
             ApiClient.Get().GetProductById(productId,
                 (response) =>
                 {
                     if (response.isSuccess && response.result != null)
                     {
-                        LoadPreviewByProduct(response.result, categorySlug, onComplete);
+                        LoadPreviewByProduct(response.result, categorySlug, isEditable, onComplete);
                     }
                     else
                     {
@@ -91,7 +94,7 @@ namespace Game.Shop.Preview
         /// <summary>
         /// Load and show preview with product object
         /// </summary>
-        public void LoadPreviewByProduct(ApiClient.ShopProduct product, string categorySlug, Action<bool> onComplete = null)
+        public void LoadPreviewByProduct(ApiClient.ShopProduct product, string categorySlug, bool isEditable = false, Action<bool> onComplete = null)
         {
             if (product == null)
             {
@@ -124,11 +127,12 @@ namespace Game.Shop.Preview
                 _currentWidget = widget;
                 _currentProduct = product;
                 _currentCategorySlug = categorySlug;
+                _isCurrentPreviewEditable = isEditable;
 
                 widget.ShowPreview(product, categorySlug);
 
                 if (_config.enableDebugLogs)
-                    Debug.Log($"[ProductPreviewLoader] Preview loaded successfully for: {product.title}");
+                    Debug.Log($"[ProductPreviewLoader] Preview loaded successfully for: {product.title}, Editable: {isEditable}");
 
                 OnPreviewLoaded?.Invoke(product);
                 onComplete?.Invoke(true);

@@ -70,7 +70,7 @@ public partial class ApiClient
         public string image;
         public List<ProductPrice> price;
         public List<object> metadata; // Can be null or empty array
-        public List<int> dependency; // Can be null or array of IDs
+        public object dependency; // Changed to object to handle null/array safely during deserialization
         public string rarity;
         public int is_active;
         public int is_tradeable;
@@ -82,6 +82,29 @@ public partial class ApiClient
         public string created_at;
         public string updated_at;
         public bool is_purchased;
+
+        // Helper to get dependency as list
+        public List<int> DependencyIds
+        {
+            get
+            {
+                if (dependency == null) return null;
+                try
+                {
+                    if (dependency is Newtonsoft.Json.Linq.JArray jArray)
+                    {
+                        return jArray.ToObject<List<int>>();
+                    }
+                    if (dependency is List<object> list)
+                    {
+                         // dynamic conversion or manual parsing
+                         return null; // Simplified for now
+                    }
+                }
+                catch {}
+                return null;
+            }
+        }
     }
 
     [Serializable]
@@ -402,15 +425,29 @@ public partial class ApiClient
         {
             try
             {
-                var apiResponse = JsonConvert.DeserializeObject<ApiResponse<T>>(response.DataAsText);
+                // Configure JSON settings to handle null values in lists
+                var settings = new JsonSerializerSettings { 
+                    NullValueHandling = NullValueHandling.Ignore,
+                    MissingMemberHandling = MissingMemberHandling.Ignore 
+                };
+                
+                var apiResponse = JsonConvert.DeserializeObject<ApiResponse<T>>(response.DataAsText, settings);
+                
+                if (apiResponse == null)
+                {
+                    Debug.LogError($"[ApiClient] Failed to deserialize response for {request.Uri}. Data: {response.DataAsText}");
+                    onFail?.Invoke("Deserialization returned null.");
+                    return;
+                }
+
                 if (apiResponse.isSuccess)
                     onSuccess?.Invoke(apiResponse);
                 else
-                    onFail?.Invoke(apiResponse.message);
+                    onFail?.Invoke(apiResponse.message ?? "API returned success=false without message");
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[ApiClient] Parse Error for {request.Uri}: {ex.Message}\nData: {response.DataAsText}");
+                Debug.LogError($"[ApiClient] Parse Error for {request.Uri}: {ex.Message}\nStack: {ex.StackTrace}\nData: {response.DataAsText}");
                 onFail?.Invoke("Parse Error: " + ex.Message);
             }
         }
@@ -499,6 +536,68 @@ public partial class ApiClient
         request.AddHeader("Content-Type", "application/json");
         request.AddHeader("Authorization", $"Bearer {token}");
         request.AddHeader("Accept", "application/json");
+
+        request.Send();
+    }
+
+    /// <summary>
+    /// Get specific profile data by key (e.g. character name)
+    /// Endpoint: /user/profile/get/{key}
+    /// Returns: Dictionary<string, object> containing { "style": {...}, "avatar_id": "..." }
+    /// </summary>
+    public void GetProfileData(string key, Action<ApiResponse<Dictionary<string, object>>> onSuccess, Action<string> onFail)
+    {
+        if (string.IsNullOrEmpty(key))
+        {
+            onFail?.Invoke("Key cannot be empty");
+            return;
+        }
+
+        // Encode the key to handle spaces (e.g. "Street Rookie" -> "Street%20Rookie")
+        string encodedKey = Uri.EscapeDataString(key);
+
+        string token = PlayerPrefs.GetString("token");
+        string url = $"{GameConfig.Instance.BaseURL.TrimEnd('/')}/user/profile/get/{encodedKey}";
+
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
+            (req, resp) => HandleResponse<Dictionary<string, object>>(req, resp, onSuccess, onFail));
+
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.AddHeader("Accept", "application/json");
+
+        request.Send();
+    }
+
+    /// <summary>
+    /// Update specific profile data by key
+    /// Endpoint: /user/profile/update/{key}
+    /// Data: JSON string
+    /// </summary>
+    public void UpdateProfileData(string key, string dataJson, Action<ApiResponse<object>> onSuccess, Action<string> onFail)
+    {
+        if (string.IsNullOrEmpty(key))
+        {
+            onFail?.Invoke("Key cannot be empty");
+            return;
+        }
+
+        // Encode the key to handle spaces (e.g. "Street Rookie" -> "Street%20Rookie")
+        string encodedKey = Uri.EscapeDataString(key);
+
+        string token = PlayerPrefs.GetString("token");
+        string url = $"{GameConfig.Instance.BaseURL.TrimEnd('/')}/user/profile/update/{encodedKey}";
+
+        var request = new HTTPRequest(new Uri(url), HTTPMethods.Post,
+            (req, resp) => HandleResponse<object>(req, resp, onSuccess, onFail));
+
+        request.AddHeader("Authorization", $"Bearer {token}");
+        request.AddHeader("Content-Type", "application/json");
+
+        if (!string.IsNullOrEmpty(dataJson))
+        {
+            byte[] body = System.Text.Encoding.UTF8.GetBytes(dataJson);
+            request.UploadSettings.UploadStream = new System.IO.MemoryStream(body);
+        }
 
         request.Send();
     }
@@ -940,7 +1039,8 @@ public partial class ApiClient
     public void GetProfileData(string key, Action<ApiResponse<ProfileDataResult>> onSuccess, Action<string> onFail)
     {
         string token = PlayerPrefs.GetString("token").Trim();
-        string url = $"{GameConfig.Instance.BaseURL.TrimEnd('/')}/user/profile/get/{key}";
+        string encodedKey = Uri.EscapeDataString(key);
+        string url = $"{GameConfig.Instance.BaseURL.TrimEnd('/')}/user/profile/get/{encodedKey}";
 
         var request = new HTTPRequest(new Uri(url), HTTPMethods.Get,
             (req, resp) =>
@@ -962,25 +1062,7 @@ public partial class ApiClient
         request.Send();
     }
 
-    public void UpdateProfileData(string key, string data, Action<ApiResponse<object>> onSuccess, Action<string> onFail)
-    {
-        string token = PlayerPrefs.GetString("token");
-        string url = $"{GameConfig.Instance.BaseURL.TrimEnd('/')}/user/profile/update/{key}";
 
-        var request = new HTTPRequest(new Uri(url), HTTPMethods.Post,
-            (req, resp) => HandleResponse<object>(req, resp, onSuccess, onFail));
-
-        request.AddHeader("Authorization", $"Bearer {token}");
-        request.AddHeader("Content-Type", "application/json");
-
-        // Assuming the API expects the raw data in a specific format or as body
-        // The user's update endpoint is user/profile/update/var1
-        // Usually these generic endpoints just take the payload
-        byte[] body = Encoding.UTF8.GetBytes(data);
-        request.UploadSettings.UploadStream = new System.IO.MemoryStream(body);
-
-        request.Send();
-    }
 
 
 

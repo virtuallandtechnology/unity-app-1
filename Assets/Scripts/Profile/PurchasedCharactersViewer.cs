@@ -42,6 +42,7 @@ namespace VirtualLand
         private int _currentCategoryIndex = 0;
         private List<ShopProduct> _purchasedCharacters = new List<ShopProduct>();
         private Dictionary<int, string> _productCategoryMap = new Dictionary<int, string>(); // Maps product ID to category slug
+        private Dictionary<int, GameObject> _characterItems = new Dictionary<int, GameObject>(); // Maps product ID to UI item
         private ShopProduct _currentCharacterProduct;
 
         private void Start()
@@ -168,7 +169,27 @@ namespace VirtualLand
 
         private void OnCharactersLoaded()
         {
-            Debug.Log($"[PurchasedCharactersViewer] Loaded {_purchasedCharacters.Count} purchased characters");
+            Debug.Log($"[PurchasedCharactersViewer] Loaded total of {_purchasedCharacters.Count} purchased characters across categories.");
+
+            // Auto-select last selected character if available
+            int lastSelectedId = PlayerPrefs.GetInt("LastSelectedCharacterId", -1);
+            if (lastSelectedId > 0)
+            {
+                var lastCharacter = _purchasedCharacters.Find(c => c.id == lastSelectedId);
+                if (lastCharacter != null)
+                {
+                    Debug.Log($"[PurchasedCharactersViewer] Auto-selecting last character: {lastCharacter.title} (ID: {lastSelectedId})");
+                    OnCharacterSelected(lastCharacter);
+                }
+                else
+                {
+                    Debug.Log($"[PurchasedCharactersViewer] Last selected character (ID: {lastSelectedId}) not found in purchased list. Total count: {_purchasedCharacters.Count}");
+                }
+            }
+            else
+            {
+                Debug.Log("[PurchasedCharactersViewer] No character previously selected (LastSelectedCharacterId not found).");
+            }
         }
 
         private void ClearCharacterList()
@@ -179,6 +200,7 @@ namespace VirtualLand
             {
                 Destroy(child.gameObject);
             }
+            _characterItems.Clear();
         }
 
         private void CreateCharacterListItem(ShopProduct product)
@@ -186,18 +208,12 @@ namespace VirtualLand
             if (_characterItemPrefab == null || _characterListContainer == null) return;
 
             var item = Instantiate(_characterItemPrefab, _characterListContainer);
+            _characterItems[product.id] = item;
+            
             var button = item.GetComponent<Button>();
             if (button != null)
             {
                 button.onClick.AddListener(() => OnCharacterSelected(product));
-            }
-
-            // Set product image if available
-            var image = item.GetComponentInChildren<Image>();
-            if (image != null && !string.IsNullOrEmpty(product.image))
-            {
-                // Load image from URL (you may need to implement image loading)
-                // For now, we'll just set the product name
             }
 
             // Set product name
@@ -213,17 +229,24 @@ namespace VirtualLand
         /// </summary>
         private void OnCharacterSelected(ShopProduct product)
         {
-            _currentCharacterProduct = product;
+            if (product == null) return;
             
+            _currentCharacterProduct = product;
+
+            // Update UI selection highlights
+            UpdateSelectionUI(product.id);
+
+            // Save selected character ID for persistence
+            PlayerPrefs.SetInt("LastSelectedCharacterId", product.id);
+            PlayerPrefs.Save();
+            Debug.Log($"[PurchasedCharactersViewer] Character Selected: {product.title} (ID: {product.id}). Saved to PlayerPrefs.");
+
             if (_characterNameText != null)
                 _characterNameText.text = product.title;
 
             // Show character in 3D viewer
             if (_characterViewer != null)
             {
-                // Use CustomizedData mode for profile (loads edited data from API)
-                _characterViewer.Initialize(product, CharacterLoadMode.CustomizedData);
-                
                 // Find the appropriate CharacterObject from PreviewSystemConfig
                 var previewConfig = Resources.Load<Game.Shop.Preview.PreviewSystemConfig>("Shop/Configs/PreviewSystemConfig");
                 if (previewConfig != null)
@@ -234,39 +257,64 @@ namespace VirtualLand
                     {
                         categorySlug = _productCategoryMap[product.id];
                     }
-                    
+
                     var widgetConfig = previewConfig.FindBestWidgetConfig(product, categorySlug);
                     if (widgetConfig != null && widgetConfig.characterObject != null && widgetConfig.baseCharacterPrefab != null)
                     {
-                        // Load from CharacterObject with CustomizedData mode
+                        Debug.Log($"[PurchasedCharactersViewer] Loading Character: {product.title} via CharacterObject: {widgetConfig.characterObject.name}");
+
+                        // Load base character first in CustomizedData mode
                         _characterViewer.LoadFromCharacterObject(
-                            widgetConfig.characterObject, 
-                            widgetConfig.baseCharacterPrefab, 
+                            widgetConfig.characterObject,
+                            widgetConfig.baseCharacterPrefab,
                             CharacterLoadMode.CustomizedData
                         );
+
+                        // Fetch latest customization from API for this specific character
+                        LoadCharacterCustomization(product.id);
                     }
                     else
                     {
-                        Debug.LogWarning($"[PurchasedCharactersViewer] No CharacterObject config found for product {product.id}, falling back to LoadModel");
+                        Debug.LogWarning($"[PurchasedCharactersViewer] No widget config for {product.title}. Falling back to default LoadModel.");
                         _characterViewer.LoadModel();
                     }
                 }
                 else
                 {
-                    Debug.LogWarning("[PurchasedCharactersViewer] PreviewSystemConfig not found, falling back to LoadModel");
+                    Debug.LogError("[PurchasedCharactersViewer] PreviewSystemConfig not found!");
                     _characterViewer.LoadModel();
                 }
-
-                // Try to load saved customization from user profile
-                // Note: Style is stored in user profile, not in product
-                // We'll load it when the character is displayed
-                LoadCharacterCustomization(product.id);
             }
 
             // Show editor panel
             if (_editorPanel != null) _editorPanel.SetActive(true);
             _currentCategoryIndex = 0;
             UpdateEditorUI();
+        }
+
+        private void UpdateSelectionUI(int selectedId)
+        {
+            foreach (var kvp in _characterItems)
+            {
+                int productId = kvp.Key;
+                GameObject item = kvp.Value;
+                bool isSelected = productId == selectedId;
+
+                // Update background color or show checkmark
+                var image = item.GetComponent<Image>();
+                if (image != null)
+                {
+                    image.color = isSelected ? new Color(0.2f, 0.6f, 1.0f, 0.5f) : new Color(1, 1, 1, 0.1f);
+                }
+
+                // Highlighting text
+                var text = item.GetComponentInChildren<TextMeshProUGUI>();
+                if (text != null)
+                {
+                    text.color = isSelected ? Color.white : new Color(1, 1, 1, 0.7f);
+                    text.fontStyle = isSelected ? FontStyles.Bold : FontStyles.Normal;
+                }
+            }
         }
 
         private void NextCategory()
@@ -306,40 +354,51 @@ namespace VirtualLand
                 return;
             }
 
+            // Capture customization JSON from viewer
             string json = _characterViewer.SaveCustomization();
             if (string.IsNullOrEmpty(json))
             {
-                ShowFeedback("Failed to save customization.");
+                ShowFeedback("Failed to capture customization.");
                 return;
+            }
+
+            // Save locally for immediate feedback
+            var currentCharacter = _characterViewer.GetCurrentCharacter();
+            if (currentCharacter != null)
+            {
+                BMAC_SaveSystem.SaveCharacter(currentCharacter, _currentCharacterProduct.title);
             }
 
             // Save to profile via API
             if (_saveButton != null) _saveButton.interactable = false;
-            ShowFeedback("Saving...");
+            ShowFeedback("Saving to server...");
 
-            // Construct style object/json
-            // We want to wrap it in avatar_id and style if that's what the endpoint expects
-            // Based on user screenshot, the response has "result": { "style": {...}, "avatar_id": "3" }
-            // So we should probably send the same structure
-            var payload = new
-            {
-                avatar_id = _currentCharacterProduct.id.ToString(),
-                style = Newtonsoft.Json.JsonConvert.DeserializeObject(json) // Deserialize to object so it serializes as object, not string
-            };
-            
+            // Create payload: Avatar ID + Style (as object)
+            // Note: ApiClient should handle URL encoding for the key
+            var styleObj = Newtonsoft.Json.JsonConvert.DeserializeObject(json);
+            var payload = new { avatar_id = _currentCharacterProduct.id.ToString(), style = styleObj };
             string payloadJson = Newtonsoft.Json.JsonConvert.SerializeObject(payload);
-            string key = _currentCharacterProduct.title;
 
-            ApiClient.Get().UpdateProfileData(key, payloadJson,
+            ApiClient.Get().UpdateProfileData(_currentCharacterProduct.title, payloadJson,
                 (response) =>
                 {
-                    ShowFeedback("Character saved successfully!");
+                    ShowFeedback("Saved successfully!");
                     if (_saveButton != null) _saveButton.interactable = true;
+                    Debug.Log($"[PurchasedCharactersViewer] Successfully saved {_currentCharacterProduct.title} to API.");
+
+                    // Sync to MainCharacterManager if this is the active character
+                    if (VirtualLand.MainCharacterManager.Instance != null && 
+                        VirtualLand.MainCharacterManager.Instance.IsMainCharacter(_currentCharacterProduct.id))
+                    {
+                        VirtualLand.MainCharacterManager.Instance.SyncFromProfile(_currentCharacterProduct.id, json);
+                        Debug.Log("[PurchasedCharactersViewer] Synced active character style to MainCharacterManager");
+                    }
                 },
                 (error) =>
                 {
-                    ShowFeedback($"Error: {error}");
+                    ShowFeedback($"Save failed: {error}");
                     if (_saveButton != null) _saveButton.interactable = true;
+                    Debug.LogError($"[PurchasedCharactersViewer] API Save error: {error}");
                 });
         }
 
@@ -364,23 +423,56 @@ namespace VirtualLand
         /// </summary>
         private void LoadCharacterCustomization(int productId)
         {
-            // Get user profile to find style for this product
-            ApiClient.Get().GetProfileInfo(
+            if (_currentCharacterProduct == null) return;
+
+            string profileKey = _currentCharacterProduct.title;
+            Debug.Log($"[PurchasedCharactersViewer] Fetching customization for '{profileKey}' from API...");
+            
+            ApiClient.Get().GetProfileData(profileKey,
                 (response) =>
                 {
                     if (response.isSuccess && response.result != null)
                     {
-                        var user = response.result;
-                        // Check if user has style saved for this product
-                        // This depends on your API structure - you may need to adjust
-                        // For now, we'll try to load from product metadata if available
-                        // In a real implementation, you'd query the profile for the specific product's style
+                        try
+                        {
+                            var profileData = response.result;
+                            if (profileData.ContainsKey("style"))
+                            {
+                                var styleData = profileData["style"];
+                                string styleJson = "";
+
+                                if (styleData is string s)
+                                {
+                                    // If it's a string, it might be double-encoded JSON OR direct JSON
+                                    styleJson = s;
+                                }
+                                else
+                                {
+                                    // If it's an object (JObject), serialize it to get JSON string
+                                    styleJson = Newtonsoft.Json.JsonConvert.SerializeObject(styleData);
+                                }
+
+                                if (!string.IsNullOrEmpty(styleJson) && styleJson != "null" && styleJson != "{}")
+                                {
+                                    Debug.Log($"[PurchasedCharactersViewer] Applying style data from server for {profileKey}");
+                                    if (_characterViewer != null)
+                                    {
+                                        _characterViewer.LoadCustomization(styleJson);
+                                    }
+                                }
+                                else
+                                {
+                                    Debug.Log($"[PurchasedCharactersViewer] Server returned empty/null style for {profileKey}.");
+                                }
+                            }
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogError($"[PurchasedCharactersViewer] Parse error in LoadCharacterCustomization: {ex.Message}");
+                        }
                     }
                 },
-                (error) =>
-                {
-                    Debug.LogWarning($"[PurchasedCharactersViewer] Could not load customization: {error}");
-                });
+                (error) => Debug.LogWarning($"[PurchasedCharactersViewer] Failed to load customization for {profileKey}: {error}"));
         }
     }
 }

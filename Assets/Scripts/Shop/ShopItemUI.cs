@@ -80,7 +80,7 @@ public class ShopItemUI : MonoBehaviour
                 var loader = Game.Shop.Preview.ProductPreviewLoader.Instance;
                 if (loader != null)
                 {
-                    loader.LoadPreviewByProduct(product, _categorySlug, (success) =>
+                    loader.LoadPreviewByProduct(product, _categorySlug, _isInventoryMode, (success) =>
                     {
                         if (success)
                         {
@@ -196,7 +196,20 @@ public class ShopItemUI : MonoBehaviour
 
     private void OnSelectClicked()
     {
-        Debug.Log($"Selected Product ID: {_data.id}");
-        NotificationController.Get().Show("Item Selected");
+        if (_data == null) return;
+        
+        Debug.Log($"[ShopItemUI] Selecting Product ID: {_data.id} ({_data.title})");
+        
+        // Save selection to MainCharacterManager
+        if (VirtualLand.MainCharacterManager.Instance != null)
+        {
+            VirtualLand.MainCharacterManager.Instance.SetMainCharacter(_data);
+            NotificationController.Get().Show($"{_data.title} Selected");
+        }
+        else
+        {
+            Debug.LogError("[ShopItemUI] MainCharacterManager instance not found!");
+            NotificationController.Get().Show("Selection Failed");
+        }
     }
 }

@@ -29,7 +29,7 @@ namespace Game.Shop.Preview
         [Tooltip("Base BMAC character prefab (OutfitSystem) to instantiate")]
         public OutfitSystem baseCharacterPrefab;
         
-        [Header("Product Mapping (Optional)")]
+        [Header("Product Mapping")]
         [Tooltip("Specific product IDs this widget handles. If empty, handles all products in supportedCategories")]
         public int[] productIds = new int[0];
 

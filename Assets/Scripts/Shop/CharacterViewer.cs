@@ -36,6 +36,7 @@ namespace Game.Shop.Visuals
         private ApiClient.ShopProduct _currentProduct;
         private CharacterData _currentCustomization;
         private CharacterLoadMode _loadMode = CharacterLoadMode.OriginalData;
+        private Task _loadingTask = Task.CompletedTask;
 
         private void Awake()
         {
@@ -70,7 +71,12 @@ namespace Game.Shop.Visuals
         /// <summary>
         /// Load character from BMAC CharacterObject
         /// </summary>
-        public async void LoadFromCharacterObject(CharacterObject characterObject, OutfitSystem basePrefab, CharacterLoadMode loadMode = CharacterLoadMode.OriginalData)
+        public void LoadFromCharacterObject(CharacterObject characterObject, OutfitSystem basePrefab, CharacterLoadMode loadMode = CharacterLoadMode.OriginalData)
+        {
+            _loadingTask = LoadFromCharacterObjectAsync(characterObject, basePrefab, loadMode);
+        }
+
+        private async Task LoadFromCharacterObjectAsync(CharacterObject characterObject, OutfitSystem basePrefab, CharacterLoadMode loadMode = CharacterLoadMode.OriginalData)
         {
             if (characterObject == null || basePrefab == null)
             {
@@ -121,6 +127,11 @@ namespace Game.Shop.Visuals
 
         public void LoadModel()
         {
+            _loadingTask = LoadModelAsync();
+        }
+
+        private async Task LoadModelAsync()
+        {
             // Clear existing character
             if (_currentCharacter != null)
             {
@@ -139,7 +150,7 @@ namespace Game.Shop.Visuals
             // Load default or saved customization
             if (_currentCustomization != null)
             {
-                LoadCustomizationData(_currentCustomization);
+                await BMAC_SaveSystem.LoadCharacter(_currentCharacter, _currentCustomization, false, true);
             }
         }
 
@@ -266,25 +277,62 @@ namespace Game.Shop.Visuals
 
         public void LoadCustomization(string customizationJson)
         {
-            if (string.IsNullOrEmpty(customizationJson))
+            if (string.IsNullOrEmpty(customizationJson) || customizationJson == "null" || customizationJson == "{}")
             {
-                Debug.LogWarning("Empty customization data!");
+                Debug.LogWarning("[CharacterViewer] Empty or null customization data received.");
                 return;
             }
 
             try
             {
-                CharacterData data = JsonUtility.FromJson<CharacterData>(customizationJson);
-                _currentCustomization = data;
-
-                if (_currentCharacter != null)
+                CharacterData data = null;
+                
+                // Try to see if it's double-encoded JSON (a string within a string)
+                // Newtonsoft is much better at handling this than JsonUtility
+                if (customizationJson.StartsWith("\"") && customizationJson.EndsWith("\""))
                 {
-                    LoadCustomizationData(data);
+                    // It's a double-encoded string, unescape it
+                    string unescaped = Newtonsoft.Json.JsonConvert.DeserializeObject<string>(customizationJson);
+                    data = Newtonsoft.Json.JsonConvert.DeserializeObject<CharacterData>(unescaped);
+                }
+                else
+                {
+                    // Regular JSON object string
+                    data = Newtonsoft.Json.JsonConvert.DeserializeObject<CharacterData>(customizationJson);
+                }
+
+                if (data != null)
+                {
+                    _currentCustomization = data;
+                    ApplyCustomization(data);
+                }
+                else
+                {
+                    Debug.LogError("[CharacterViewer] Deserialization returned null for customization data.");
                 }
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"Failed to load customization: {e.Message}");
+                Debug.LogError($"[CharacterViewer] Failed to load customization: {e.Message}\nData: {customizationJson}");
+            }
+        }
+
+        private async void ApplyCustomization(CharacterData data)
+        {
+            // Wait for loading to finish if in progress
+            if (!_loadingTask.IsCompleted)
+            {
+                Debug.Log("[CharacterViewer] Waiting for character load before applying customization...");
+                await _loadingTask;
+            }
+
+            if (_currentCharacter != null)
+            {
+                LoadCustomizationData(data);
+            }
+            else
+            {
+                Debug.LogError("[CharacterViewer] Cannot apply customization: _currentCharacter is null");
             }
         }
 
