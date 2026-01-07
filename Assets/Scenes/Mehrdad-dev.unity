@@ -4030,15 +4030,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3235560882093420623, guid: 83681b6b6092a47ffb6e59980424dea9, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 3.3
+      value: 16
       objectReference: {fileID: 0}
     - target: {fileID: 3235560882093420623, guid: 83681b6b6092a47ffb6e59980424dea9, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 209
+      value: 0.000030518
       objectReference: {fileID: 0}
     - target: {fileID: 3235560882644913396, guid: 83681b6b6092a47ffb6e59980424dea9, type: 3}
       propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
       value: 1801810542
+      objectReference: {fileID: 0}
+    - target: {fileID: 3235560883010847195, guid: 83681b6b6092a47ffb6e59980424dea9, type: 3}
+      propertyPath: m_text
+      value: 000
       objectReference: {fileID: 0}
     - target: {fileID: 3235560883010847195, guid: 83681b6b6092a47ffb6e59980424dea9, type: 3}
       propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
@@ -4147,6 +4151,10 @@ PrefabInstance:
     - target: {fileID: 7960969493206410007, guid: 83681b6b6092a47ffb6e59980424dea9, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
+    - target: {fileID: 7960969493246190649, guid: 83681b6b6092a47ffb6e59980424dea9, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7960969493275356230, guid: 83681b6b6092a47ffb6e59980424dea9, type: 3}
       propertyPath: m_Pivot.x
@@ -4397,6 +4405,10 @@ PrefabInstance:
     - target: {fileID: 8931702769825863537, guid: 83681b6b6092a47ffb6e59980424dea9, type: 3}
       propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
       value: 1801810542
+      objectReference: {fileID: 0}
+    - target: {fileID: 8931702770206435042, guid: 83681b6b6092a47ffb6e59980424dea9, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8931702770206435044, guid: 83681b6b6092a47ffb6e59980424dea9, type: 3}
       propertyPath: m_InputType
