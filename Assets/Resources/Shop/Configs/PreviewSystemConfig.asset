@@ -15,6 +15,7 @@ MonoBehaviour:
   widgets:
   - {fileID: 11400000, guid: ca3b0865744cdb048bca8653dbcd7083, type: 2}
   - {fileID: 11400000, guid: 67c1d3caf939bbc4987e968a7af613ac, type: 2}
+  - {fileID: 11400000, guid: d1980de6cb35e394790885071d95838e, type: 2}
   maxCacheSize: 20
   cacheExpirationTime: 300
   transitionDuration: 0.3

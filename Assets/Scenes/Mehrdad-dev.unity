@@ -11966,6 +11966,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2636993757071291328, guid: db85b83cc3ebcc2408136893d9f34849, type: 3}
+      propertyPath: _config
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 2636993757071291328, guid: db85b83cc3ebcc2408136893d9f34849, type: 3}
       propertyPath: _characterViewer
       value: 
       objectReference: {fileID: 1579896499}

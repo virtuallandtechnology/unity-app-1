@@ -32,13 +32,13 @@ namespace VirtualLand
             if (string.IsNullOrEmpty(_loginusername.text) ||
                 string.IsNullOrEmpty(_loginpassword.text))
             {
-                NotificationController.Get().Show("Validation Error", "Please enter username and password.", null, null);
+                NotificationController.Get().Show("Validation Error", "Please enter username and password.", () => { }, null);
                 return;
             }
 
             if (_loginpassword.text.Length < 5)
             {
-                NotificationController.Get().Show("Validation Error", "Password must be at least 8 characters.", null, null);
+                NotificationController.Get().Show("Validation Error", "Password must be at least 8 characters.", () => { }, null);
                 return;
             }
 
@@ -57,8 +57,8 @@ namespace VirtualLand
                 message = "Incorrect email or password.";
             }
 
-            // Use popup with OK button instead of auto-hide
-            NotificationController.Get().Show("Login Error", message, null, null);
+            // Use popup with OK button - provide empty callback to close popup
+            NotificationController.Get().Show("Login Error", message, () => { }, null);
         }
 
         private void OnSuccess(ApiResponse<UserData> response)

@@ -20,6 +20,14 @@ public partial class ApiClient
         return instance;
     }
 
+    /// <summary>
+    /// Check if internet connection is available
+    /// </summary>
+    public bool IsInternetAvailable()
+    {
+        return Application.internetReachability != NetworkReachability.NotReachable;
+    }
+
     public UserData GetUserData()
     {
         return _userdata;
@@ -54,11 +62,25 @@ public partial class ApiClient
     public class ShopProduct
     {
         public int id;
+        public int category_id;
+        public string slug;
         public string title;
+        public string sub_title;
         public string description;
         public string image;
         public List<ProductPrice> price;
+        public List<object> metadata; // Can be null or empty array
+        public List<int> dependency; // Can be null or array of IDs
+        public string rarity;
+        public int is_active;
+        public int is_tradeable;
+        public int is_giftable;
+        public int is_refundable;
+        public int is_consumable;
+        public int is_stackable;
         public int in_stock;
+        public string created_at;
+        public string updated_at;
         public bool is_purchased;
     }
 
@@ -510,6 +532,20 @@ public partial class ApiClient
 
     public void GetServerConfig(Action<ApiResponse<Result>> onSuccess, Action<string> onFail)
     {
+        // Check internet connectivity first
+        if (!IsInternetAvailable())
+        {
+            Debug.LogWarning("[ApiClient] No internet connection available");
+            NotificationController.Get()?.Show(
+                "No Internet Connection",
+                "Please check your internet connection and try again.",
+                () => { },
+                null
+            );
+            onFail?.Invoke("No internet connection");
+            return;
+        }
+
         string url = $"{GameConfig.Instance.BaseURL.TrimEnd('/')}/configs";
 
         var request = new HTTPRequest(new System.Uri(url), HTTPMethods.Get,

@@ -12,10 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9cbf5a7f1094e7b4183b5ab8f53864ee, type: 3}
   m_Name: CharacterWidgetConfig 2
   m_EditorClassIdentifier: Assembly-CSharp::Game.Shop.Preview.PreviewWidgetConfig
-  widgetId: 47
+  widgetId: 43
   priority: 20
   supportedCategories:
-  - CIVILIANS
-  characterObject: {fileID: 11400000, guid: 40c11d3dfcfaad64eb5fb93ddd4cca4d, type: 2}
+  - GANG-MEMBERS
+  characterObject: {fileID: 11400000, guid: 876fb9b1cc7664948b8cf0e619a46071, type: 2}
   baseCharacterPrefab: {fileID: 7630683439406129268, guid: 828d2ce3c8fb74f498e8bb757fa113a6, type: 3}
+  productIds: 2b000000
   description: Character preview using BoZo system

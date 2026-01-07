@@ -27,13 +27,13 @@ public class RegisterPage : BootStrapBasePanel
         if (string.IsNullOrEmpty(_name.text) || string.IsNullOrEmpty(_email.text) || 
             string.IsNullOrEmpty(_password2.text))
         {
-            NotificationController.Get().Show("Validation Error", "Please fill in all fields.", null, null);
+            NotificationController.Get().Show("Validation Error", "Please fill in all fields.", () => { }, null);
             return;
         }
 
         if (_password2.text.Length < 8)
         {
-            NotificationController.Get().Show("Validation Error", "Password must be at least 8 characters.", null, null);
+            NotificationController.Get().Show("Validation Error", "Password must be at least 8 characters.", () => { }, null);
             return;
         }
 
@@ -43,7 +43,7 @@ public class RegisterPage : BootStrapBasePanel
         // If _password1 is active, check match.
         if (_password1 != null && _password1.gameObject.activeSelf && _password1.text != _password2.text)
         {
-           NotificationController.Get().Show("Validation Error", "Passwords do not match.", null, null);
+           NotificationController.Get().Show("Validation Error", "Passwords do not match.", () => { }, null);
            return;
         }
 
@@ -65,8 +65,8 @@ public class RegisterPage : BootStrapBasePanel
             message = "Registration failed. Please try again.";
         }
 
-        // Use popup with OK button instead of auto-hide
-        NotificationController.Get().Show("Registration Error", message, null, null);
+        // Use popup with OK button - provide empty callback to close popup
+        NotificationController.Get().Show("Registration Error", message, () => { }, null);
     }
 
     private void OnSuccess(ApiResponse<UserData> response)

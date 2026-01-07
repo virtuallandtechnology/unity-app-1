@@ -41,6 +41,7 @@ namespace VirtualLand
         private string[] _editableCategories = new string[] { "Hair", "Head", "Torso", "Legs" };
         private int _currentCategoryIndex = 0;
         private List<ShopProduct> _purchasedCharacters = new List<ShopProduct>();
+        private Dictionary<int, string> _productCategoryMap = new Dictionary<int, string>(); // Maps product ID to category slug
         private ShopProduct _currentCharacterProduct;
 
         private void Start()
@@ -141,6 +142,7 @@ namespace VirtualLand
                                 if (item.product != null)
                                 {
                                     _purchasedCharacters.Add(item.product);
+                                    _productCategoryMap[item.product.id] = category; // Track category
                                     CreateCharacterListItem(item.product);
                                 }
                             }
@@ -221,7 +223,39 @@ namespace VirtualLand
             {
                 // Use CustomizedData mode for profile (loads edited data from API)
                 _characterViewer.Initialize(product, CharacterLoadMode.CustomizedData);
-                _characterViewer.LoadModel();
+                
+                // Find the appropriate CharacterObject from PreviewSystemConfig
+                var previewConfig = Resources.Load<Game.Shop.Preview.PreviewSystemConfig>("Shop/Configs/PreviewSystemConfig");
+                if (previewConfig != null)
+                {
+                    // Get category for this product
+                    string categorySlug = "CIVILIANS"; // Default fallback
+                    if (_productCategoryMap.ContainsKey(product.id))
+                    {
+                        categorySlug = _productCategoryMap[product.id];
+                    }
+                    
+                    var widgetConfig = previewConfig.FindBestWidgetConfig(product, categorySlug);
+                    if (widgetConfig != null && widgetConfig.characterObject != null && widgetConfig.baseCharacterPrefab != null)
+                    {
+                        // Load from CharacterObject with CustomizedData mode
+                        _characterViewer.LoadFromCharacterObject(
+                            widgetConfig.characterObject, 
+                            widgetConfig.baseCharacterPrefab, 
+                            CharacterLoadMode.CustomizedData
+                        );
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[PurchasedCharactersViewer] No CharacterObject config found for product {product.id}, falling back to LoadModel");
+                        _characterViewer.LoadModel();
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("[PurchasedCharactersViewer] PreviewSystemConfig not found, falling back to LoadModel");
+                    _characterViewer.LoadModel();
+                }
 
                 // Try to load saved customization from user profile
                 // Note: Style is stored in user profile, not in product
