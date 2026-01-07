@@ -15,13 +15,12 @@ public class ShopItemUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _toggleText;
     [SerializeField] private GameObject _ownedIndicator;
     [SerializeField] private Button _view3DButton;
-    [SerializeField] private Canvas _canvasShop;
-    [SerializeField] private Button _previewButton;
 
     private ApiClient.ShopProduct _data;
     private bool _isInventoryMode;
     private string _categorySlug;
-
+    [SerializeField] private Button _previewButton;
+    [SerializeField] private Canvas _canvasShop;
     private string CustomCacheFolder => Path.Combine(Application.persistentDataPath, "ShopImages");
 
     private void Awake()
@@ -30,8 +29,6 @@ public class ShopItemUI : MonoBehaviour
         {
             Directory.CreateDirectory(CustomCacheFolder);
         }
-
-        // Try to find canvas if not assigned
         if (_canvasShop == null)
         {
             var canvasGO = GameObject.Find("CanvasMain");
@@ -39,8 +36,23 @@ public class ShopItemUI : MonoBehaviour
             {
                 _canvasShop = canvasGO.GetComponent<Canvas>();
             }
-            _previewButton = GameObject.Find("Button back editor")?.GetComponent<Button>();
         }
+        _previewButton = GameObject.Find("Button back editor")?.GetComponent<Button>();
+        if (_previewButton != null)
+        {
+            _previewButton.onClick.RemoveAllListeners();
+            _previewButton.onClick.AddListener(() =>
+           {
+               // Re-enable canvas when exiting preview
+               if (_canvasShop != null)
+               {
+                   _canvasShop.enabled = true;
+                   //GameObject.Find("Page_Outfit").SetActive(true);
+                   Debug.Log("[ShopItemUI] Canvas Shop re-enabled");
+               }
+           });
+        }
+
 
     }
 
@@ -49,15 +61,7 @@ public class ShopItemUI : MonoBehaviour
         _data = product;
         _isInventoryMode = isInventory;
         _categorySlug = categorySlug;
-        _previewButton.onClick.AddListener(() =>
-                {
-                    // Re-enable canvas when exiting preview
-                    if (_canvasShop != null)
-                    {
-                        _canvasShop.enabled = true;
-                        Debug.Log("[ShopItemUI] Canvas Shop re-enabled");
-                    }
-                });
+
         if (_titleText) _titleText.text = product.title;
 
         _actionToggle.onValueChanged.RemoveAllListeners();
@@ -70,13 +74,6 @@ public class ShopItemUI : MonoBehaviour
             {
                 Debug.Log($"[ShopItemUI] Opening preview for: {_categorySlug} (ID: {product.id})");
 
-                // Disable canvas when opening preview
-                if (_canvasShop != null)
-                {
-                    _canvasShop.enabled = false;
-                    Debug.Log("[ShopItemUI] Canvas Shop disabled");
-                }
-
                 var loader = Game.Shop.Preview.ProductPreviewLoader.Instance;
                 if (loader != null)
                 {
@@ -84,10 +81,12 @@ public class ShopItemUI : MonoBehaviour
                     {
                         if (success)
                         {
+                            GameObject.Find("CanvasMain").GetComponent<Canvas>().enabled = false;
                             Debug.Log("[ShopItemUI] Preview loaded successfully");
                         }
                         else
                         {
+                            GameObject.Find("CanvasMain").GetComponent<Canvas>().enabled = true;
                             Debug.LogError($"[ShopItemUI] Failed to load preview for product {product.id}");
                         }
                     });

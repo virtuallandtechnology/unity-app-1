@@ -208,7 +208,7 @@ public class ShopManager : MonoBehaviour
         if (string.IsNullOrEmpty(categorySlug)) return;
 
         Debug.Log($"Fetching data for Mode: {_currentMode}, Category: {categorySlug}");
-
+        GameObject.Find("Page_Outfit").SetActive(false);
         if (_currentMode == ShopMode.Store)
         {
             ApiClient.Get().GetProductsByCategory(categorySlug,

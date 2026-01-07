@@ -14,6 +14,7 @@ namespace Game.Shop.UI
         [Header("Canvas References")]
         [Tooltip("The main Shop UI Canvas/Panel to hide when preview is active")]
         [SerializeField] private GameObject _shopCanvas;
+        private Canvas _shopCanvasComponent;
         
         [Tooltip("The Preview UI Canvas/Panel to show when preview is active")]
         [SerializeField] private GameObject _previewCanvas;
@@ -38,9 +39,30 @@ namespace Game.Shop.UI
 
         private void Start()
         {
+            // Robust finding for Shop Canvas
+            if (_shopCanvas == null)
+            {
+                string[] possibleNames = { "Canvas Shop", "CanvasMain", "CanvasShop" };
+                foreach (var name in possibleNames)
+                {
+                    var go = GameObject.Find(name);
+                    if (go != null)
+                    {
+                        _shopCanvas = go;
+                        Debug.Log($"[ShopPreviewUI] Found Shop Canvas automatically: {name}");
+                        break;
+                    }
+                }
+            }
+
+            if (_shopCanvas != null)
+            {
+                _shopCanvasComponent = _shopCanvas.GetComponent<Canvas>();
+            }
+
             // Initial State
             if (_previewCanvas != null) _previewCanvas.SetActive(false);
-            if (_shopCanvas != null) _shopCanvas.SetActive(true);
+            SetShopCanvasVisible(true);
 
             // Subscribe to Loader Events
             var loader = ProductPreviewLoader.Instance;
@@ -83,7 +105,7 @@ namespace Game.Shop.UI
         private void OnPreviewClosed()
         {
             // Show Shop, Hide Preview UI
-            if (_shopCanvas != null) _shopCanvas.SetActive(true);
+            SetShopCanvasVisible(true);
             if (_previewCanvas != null) _previewCanvas.SetActive(false);
             if (_editorPanel != null) _editorPanel.SetActive(false);
         }
@@ -91,7 +113,7 @@ namespace Game.Shop.UI
         private void OnPreviewLoaded(ApiClient.ShopProduct product)
         {
             // Hide Shop, Show Preview UI
-            if (_shopCanvas != null) _shopCanvas.SetActive(false);
+            SetShopCanvasVisible(false);
             if (_previewCanvas != null) _previewCanvas.SetActive(true);
             
             // Check if editable from loader context
@@ -104,6 +126,18 @@ namespace Game.Shop.UI
             {
                 _currentCategoryIndex = 0;
                 UpdateEditorUI();
+            }
+        }
+
+        private void SetShopCanvasVisible(bool visible)
+        {
+            if (_shopCanvasComponent != null)
+            {
+                _shopCanvasComponent.enabled = visible;
+            }
+            else if (_shopCanvas != null)
+            {
+                _shopCanvas.SetActive(visible);
             }
         }
 

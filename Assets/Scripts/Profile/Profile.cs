@@ -39,6 +39,7 @@ namespace VirtualLand
         public User GetUser;
 
         private int _currentProfileID;
+        public GameObject Page_Outfit;
 
         private void OnEnable()
         {
@@ -123,6 +124,8 @@ namespace VirtualLand
                             
                             // Also update avatar images if they depend on the ID
                              UpdateAllImages(charId);
+                            Page_Outfit.SetActive(true);
+
                         }
                     }, 
                     (err) => 

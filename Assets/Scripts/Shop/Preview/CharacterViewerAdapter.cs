@@ -23,10 +23,6 @@ namespace Game.Shop.Preview.Adapters
         [Header("Widget Root")]
         [SerializeField] private GameObject _widgetRoot;
 
-        [Header("Shop Canvas")]
-        [Tooltip("Assign the Canvas component of the Shop Canvas GameObject")]
-        public Canvas _canvasShop;
-
         public string WidgetId => _config != null ? _config.widgetId : "character_adapter";
         public int Priority => _config != null ? _config.priority : 20;
 
@@ -51,25 +47,6 @@ namespace Game.Shop.Preview.Adapters
             {
                 _widgetRoot = gameObject;
             }
-
-            // Try to find canvasShop if not assigned
-            if (_canvasShop == null)
-            {
-                var shopCanvasGO = GameObject.Find("Canvas Shop");
-                if (shopCanvasGO != null)
-                {
-                    _canvasShop = shopCanvasGO.GetComponent<Canvas>();
-                    Debug.Log($"[CharacterViewerAdapter] Found Canvas Shop: {_canvasShop != null}");
-                }
-                else
-                {
-                    Debug.LogWarning("[CharacterViewerAdapter] Could not find 'Canvas Shop' GameObject. Please assign _canvasShop in Inspector.");
-                }
-            }
-            else
-            {
-                Debug.Log("[CharacterViewerAdapter] Canvas Shop already assigned in Inspector");
-            }
         }
 
         public bool CanHandleProduct(ApiClient.ShopProduct product, string categorySlug)
@@ -86,17 +63,6 @@ namespace Game.Shop.Preview.Adapters
             {
                 _widgetRoot.SetActive(true);
                 Debug.Log("[CharacterViewerAdapter] Widget root activated");
-            }
-
-            // Disable shop canvas when preview opens
-            if (_canvasShop != null)
-            {
-                _canvasShop.enabled = false;
-                Debug.Log("[CharacterViewerAdapter] Canvas Shop disabled");
-            }
-            else
-            {
-                Debug.LogWarning("[CharacterViewerAdapter] Canvas Shop reference is null!");
             }
 
             if (_characterViewer != null)
@@ -142,13 +108,6 @@ namespace Game.Shop.Preview.Adapters
             if (_widgetRoot != null)
             {
                 _widgetRoot.SetActive(false);
-            }
-
-            // Re-enable shop canvas when preview closes
-            if (_canvasShop != null)
-            {
-                _canvasShop.enabled = true;
-                Debug.Log("[CharacterViewerAdapter] Canvas Shop re-enabled");
             }
 
             if (_characterViewer != null)
