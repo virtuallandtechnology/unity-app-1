@@ -43,17 +43,17 @@ namespace Game.Shop.Preview
                 return null;
             }
 
-            // Filter widgets that can handle this category
+            // Filter widgets that can handle this category and have valid config
             var compatibleWidgets = widgets.Where(w => 
                 w != null && 
-                w.widgetPrefab != null && 
-                w.CanHandleCategory(categorySlug)
+                (w.characterObject != null || w.baseCharacterPrefab != null) && 
+                w.CanHandleProduct(product.id, categorySlug)
             ).ToList();
 
             if (compatibleWidgets.Count == 0)
             {
                 if (enableDebugLogs)
-                    Debug.LogWarning($"[PreviewSystemConfig] No compatible widget found for category: {categorySlug}");
+                    Debug.LogWarning($"[PreviewSystemConfig] No compatible widget found for product: {product.id}, category: {categorySlug}");
                 return null;
             }
 
@@ -61,7 +61,7 @@ namespace Game.Shop.Preview
             var bestWidget = compatibleWidgets.OrderByDescending(w => w.priority).First();
 
             if (enableDebugLogs)
-                Debug.Log($"[PreviewSystemConfig] Selected widget '{bestWidget.widgetId}' (priority: {bestWidget.priority}) for category: {categorySlug}");
+                Debug.Log($"[PreviewSystemConfig] Selected widget '{bestWidget.widgetId}' (priority: {bestWidget.priority}) for product: {product.id}, category: {categorySlug}");
 
             return bestWidget;
         }

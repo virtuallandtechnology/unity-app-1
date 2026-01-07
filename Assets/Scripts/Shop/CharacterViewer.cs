@@ -6,6 +6,15 @@ using System.Collections.Generic;
 namespace Game.Shop.Visuals
 {
     /// <summary>
+    /// Character loading mode
+    /// </summary>
+    public enum CharacterLoadMode
+    {
+        OriginalData,    // Load from CharacterObject.data (Shop)
+        CustomizedData   // Load from API user customization (Profile)
+    }
+
+    /// <summary>
     /// Character viewer implementation using BoZo Stylized Modular Characters system
     /// </summary>
     public class CharacterViewer : MonoBehaviour
@@ -26,6 +35,7 @@ namespace Game.Shop.Visuals
         private OutfitSystem _currentCharacter;
         private ApiClient.ShopProduct _currentProduct;
         private CharacterData _currentCustomization;
+        private CharacterLoadMode _loadMode = CharacterLoadMode.OriginalData;
 
         private void Awake()
         {
@@ -49,13 +59,66 @@ namespace Game.Shop.Visuals
             return _characterCreator;
         }
 
-        public void Initialize(ApiClient.ShopProduct productData)
+        public void Initialize(ApiClient.ShopProduct productData, CharacterLoadMode loadMode = CharacterLoadMode.OriginalData)
         {
             _currentProduct = productData;
+            _loadMode = loadMode;
             this.gameObject.SetActive(true); // Ensure the viewer itself is active
             _viewerRoot.SetActive(true);
         }
         
+        /// <summary>
+        /// Load character from BMAC CharacterObject
+        /// </summary>
+        public async void LoadFromCharacterObject(CharacterObject characterObject, OutfitSystem basePrefab, CharacterLoadMode loadMode = CharacterLoadMode.OriginalData)
+        {
+            if (characterObject == null || basePrefab == null)
+            {
+                Debug.LogError("[CharacterViewer] CharacterObject or basePrefab is null!");
+                return;
+            }
+
+            _loadMode = loadMode;
+
+            // Clear existing character
+            if (_currentCharacter != null)
+            {
+                Destroy(_currentCharacter.gameObject);
+            }
+
+            // Instantiate base character
+            _currentCharacter = Instantiate(basePrefab, _characterSpawnPoint);
+            if (_characterCreator != null)
+            {
+                _characterCreator.ReplaceCharacter(_currentCharacter);
+            }
+            _currentCharacter.transform.localPosition = Vector3.zero;
+            _currentCharacter.transform.localRotation = Quaternion.identity;
+
+            // Load character data based on mode
+            if (_loadMode == CharacterLoadMode.OriginalData)
+            {
+                // Shop mode: Load from CharacterObject.data
+                Debug.Log($"[CharacterViewer] Loading character from CharacterObject (Original Data)");
+                await BMAC_SaveSystem.LoadCharacter(_currentCharacter, characterObject.data, false, true);
+            }
+            else
+            {
+                // Profile mode: Load customized data from API (if available)
+                Debug.Log($"[CharacterViewer] Loading character in Customized Data mode");
+                if (_currentCustomization != null)
+                {
+                    await BMAC_SaveSystem.LoadCharacter(_currentCharacter, _currentCustomization, false, true);
+                }
+                else
+                {
+                    // Fallback to original data if no customization exists
+                    Debug.Log($"[CharacterViewer] No customization found, using original data");
+                    await BMAC_SaveSystem.LoadCharacter(_currentCharacter, characterObject.data, false, true);
+                }
+            }
+        }
+
         public void LoadModel()
         {
             // Clear existing character
@@ -66,7 +129,10 @@ namespace Game.Shop.Visuals
 
             // Instantiate character
             _currentCharacter = Instantiate(_outfitSystemPrefab, _characterSpawnPoint);
-            _characterCreator.ReplaceCharacter(_currentCharacter);
+            if (_characterCreator != null)
+            {
+                _characterCreator.ReplaceCharacter(_currentCharacter);
+            }
             _currentCharacter.transform.localPosition = Vector3.zero;
             _currentCharacter.transform.localRotation = Quaternion.identity;
             

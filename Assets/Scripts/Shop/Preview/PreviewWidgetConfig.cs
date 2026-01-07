@@ -1,4 +1,5 @@
 using UnityEngine;
+using Bozo.ModularCharacters;
 
 namespace Game.Shop.Preview
 {
@@ -21,9 +22,16 @@ namespace Game.Shop.Preview
         [Tooltip("List of category slugs this widget supports (case-insensitive)")]
         public string[] supportedCategories = new string[0];
 
-        [Header("Widget Prefab")]
-        [Tooltip("Prefab containing the widget MonoBehaviour with IProductPreviewWidget")]
-        public GameObject widgetPrefab;
+        [Header("BMAC Character Configuration")]
+        [Tooltip("BMAC Character Object containing character data")]
+        public CharacterObject characterObject;
+        
+        [Tooltip("Base BMAC character prefab (OutfitSystem) to instantiate")]
+        public OutfitSystem baseCharacterPrefab;
+        
+        [Header("Product Mapping (Optional)")]
+        [Tooltip("Specific product IDs this widget handles. If empty, handles all products in supportedCategories")]
+        public int[] productIds = new int[0];
 
         [Header("Metadata (Optional)")]
         [Tooltip("Additional metadata for this widget")]
@@ -47,6 +55,29 @@ namespace Game.Shop.Preview
                 {
                     return true;
                 }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Check if this widget can handle a specific product
+        /// </summary>
+        public bool CanHandleProduct(int productId, string categorySlug)
+        {
+            // First check if category is supported
+            if (!CanHandleCategory(categorySlug))
+                return false;
+
+            // If no specific product IDs are defined, handle all products in this category
+            if (productIds == null || productIds.Length == 0)
+                return true;
+
+            // Check if this specific product ID is in the list
+            foreach (var id in productIds)
+            {
+                if (id == productId)
+                    return true;
             }
 
             return false;

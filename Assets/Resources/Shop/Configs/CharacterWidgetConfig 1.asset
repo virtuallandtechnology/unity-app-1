@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9cbf5a7f1094e7b4183b5ab8f53864ee, type: 3}
-  m_Name: CharacterWidgetConfig
+  m_Name: CharacterWidgetConfig 1
   m_EditorClassIdentifier: Assembly-CSharp::Game.Shop.Preview.PreviewWidgetConfig
-  widgetId: 41
+  widgetId: 47
   priority: 20
   supportedCategories:
   - CIVILIANS
-  characterObject: {fileID: 11400000, guid: d57495b67e372bc4380c48d4f1986414, type: 2}
+  characterObject: {fileID: 11400000, guid: 40c11d3dfcfaad64eb5fb93ddd4cca4d, type: 2}
   baseCharacterPrefab: {fileID: 7630683439406129268, guid: 828d2ce3c8fb74f498e8bb757fa113a6, type: 3}
   description: Character preview using BoZo system

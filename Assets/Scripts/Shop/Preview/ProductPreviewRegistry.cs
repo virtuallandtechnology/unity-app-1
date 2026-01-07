@@ -35,6 +35,32 @@ namespace Game.Shop.Preview
                 return null;
             }
 
+            // For BMAC character widgets, always find the CharacterViewerAdapter in scene
+            bool isBMACWidget = widgetConfig.characterObject != null && widgetConfig.baseCharacterPrefab != null;
+            
+            if (isBMACWidget)
+            {
+                // Find CharacterViewerAdapter directly (don't use widgetId matching)
+                // Include inactive objects because the adapter might be hidden from previous preview
+                var adapter = Object.FindObjectOfType<Game.Shop.Preview.Adapters.CharacterViewerAdapter>(includeInactive: true);
+                if (adapter != null)
+                {
+                    // Update config for this product
+                    adapter.SetCurrentConfig(widgetConfig);
+                    
+                    if (_config.enableDebugLogs)
+                        Debug.Log($"[ProductPreviewRegistry] Using CharacterViewerAdapter for BMAC widget: {widgetConfig.widgetId}");
+                    
+                    return adapter;
+                }
+                else
+                {
+                    Debug.LogError($"[ProductPreviewRegistry] CharacterViewerAdapter not found in scene!");
+                    return null;
+                }
+            }
+
+            // For non-BMAC widgets, use normal caching logic
             // Check if already instantiated/cached
             if (_instantiatedWidgets.TryGetValue(widgetConfig.widgetId, out var existingWidget))
             {
@@ -85,27 +111,11 @@ namespace Game.Shop.Preview
 
         private IProductPreviewWidget InstantiateWidget(PreviewWidgetConfig config)
         {
-            if (config.widgetPrefab == null)
-            {
-                Debug.LogError($"[ProductPreviewRegistry] Widget prefab is null for: {config.widgetId}");
-                return null;
-            }
-
-            var widgetObj = Object.Instantiate(config.widgetPrefab, _container);
-            widgetObj.name = $"Widget_{config.widgetId}";
-
-            var widget = widgetObj.GetComponent<IProductPreviewWidget>();
-            if (widget == null)
-            {
-                Debug.LogError($"[ProductPreviewRegistry] Widget prefab missing IProductPreviewWidget component: {config.widgetId}");
-                Object.Destroy(widgetObj);
-                return null;
-            }
-
-            // Hide by default
-            widgetObj.SetActive(false);
-
-            return widget;
+            // This method is now only for non-BMAC widgets
+            // BMAC widgets are handled directly in GetWidgetForProduct
+            
+            Debug.LogError($"[ProductPreviewRegistry] Cannot instantiate widget: {config.widgetId}. BMAC widgets should be in scene, other widgets not yet supported.");
+            return null;
         }
 
         /// <summary>

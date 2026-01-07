@@ -219,7 +219,8 @@ namespace VirtualLand
             // Show character in 3D viewer
             if (_characterViewer != null)
             {
-                _characterViewer.Initialize(product);
+                // Use CustomizedData mode for profile (loads edited data from API)
+                _characterViewer.Initialize(product, CharacterLoadMode.CustomizedData);
                 _characterViewer.LoadModel();
 
                 // Try to load saved customization from user profile

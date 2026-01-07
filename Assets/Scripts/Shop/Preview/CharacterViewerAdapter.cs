@@ -1,5 +1,6 @@
 using UnityEngine;
 using Game.Shop.Visuals;
+using static Game.Shop.Visuals.CharacterLoadMode;
 
 namespace Game.Shop.Preview.Adapters
 {
@@ -12,6 +13,9 @@ namespace Game.Shop.Preview.Adapters
     {
         [Header("Configuration")]
         [SerializeField] private PreviewWidgetConfig _config;
+        
+        // Current config for dynamic loading (can be different from _config)
+        private PreviewWidgetConfig _currentConfig;
 
         [Header("Existing Viewer")]
         [SerializeField] private CharacterViewer _characterViewer;
@@ -25,6 +29,15 @@ namespace Game.Shop.Preview.Adapters
 
         public string WidgetId => _config != null ? _config.widgetId : "character_adapter";
         public int Priority => _config != null ? _config.priority : 20;
+
+        /// <summary>
+        /// Set the current config for this preview (allows dynamic CharacterObject loading)
+        /// </summary>
+        public void SetCurrentConfig(PreviewWidgetConfig config)
+        {
+            _currentConfig = config;
+            Debug.Log($"[CharacterViewerAdapter] Config updated to: {config?.widgetId ?? "NULL"}");
+        }
 
         private void Awake()
         {
@@ -88,10 +101,35 @@ namespace Game.Shop.Preview.Adapters
 
             if (_characterViewer != null)
             {
-                Debug.Log("[CharacterViewerAdapter] Initializing CharacterViewer");
-                // Use existing CharacterViewer interface
-                _characterViewer.Initialize(product);
-                _characterViewer.LoadModel();
+                // Use currentConfig if set, otherwise fall back to _config
+                var configToUse = _currentConfig ?? _config;
+                
+                if (configToUse != null)
+                {
+                    Debug.Log($"[CharacterViewerAdapter] Initializing CharacterViewer with CharacterObject: {configToUse.characterObject?.name ?? "NULL"}");
+                    
+                    // Initialize with shop mode (original data)
+                    _characterViewer.Initialize(product, CharacterLoadMode.OriginalData);
+                    
+                    // Load from CharacterObject if available
+                    if (configToUse.characterObject != null && configToUse.baseCharacterPrefab != null)
+                    {
+                        _characterViewer.LoadFromCharacterObject(
+                            configToUse.characterObject, 
+                            configToUse.baseCharacterPrefab, 
+                            CharacterLoadMode.OriginalData
+                        );
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[CharacterViewerAdapter] CharacterObject or baseCharacterPrefab not configured, falling back to LoadModel");
+                        _characterViewer.LoadModel();
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("[CharacterViewerAdapter] No config available!");
+                }
             }
             else
             {
