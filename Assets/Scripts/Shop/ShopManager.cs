@@ -32,6 +32,7 @@ public class ShopManager : MonoBehaviour
 
     private string _currentSubCategorySlug;
     private List<CategoryButton> _spawnedCategoryButtons = new List<CategoryButton>();
+    public GameObject uiEditor;
 
 
 
@@ -53,6 +54,7 @@ public class ShopManager : MonoBehaviour
     {
         SetLoading(true);
         ApiClient.Get().GetAllCategories(OnCategoriesReceived, OnError);
+        uiEditor.SetActive(false);
     }
 
     private void OnCategoriesReceived(ApiClient.ApiResponse<ApiClient.CategoryResult> response)
